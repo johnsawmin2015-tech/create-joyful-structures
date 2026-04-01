@@ -1,4 +1,4 @@
-import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut } from "lucide-react";
+import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut, Monitor, BarChart3, Search, Brain } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
