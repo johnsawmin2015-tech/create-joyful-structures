@@ -18,8 +18,12 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Live Monitor", url: "/live-monitor", icon: Monitor },
   { title: "Cameras", url: "/cameras", icon: Camera },
   { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Forensic Search", url: "/forensic-search", icon: Search },
+  { title: "AI Models", url: "/ai-models", icon: Brain },
   { title: "Users", url: "/users", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
