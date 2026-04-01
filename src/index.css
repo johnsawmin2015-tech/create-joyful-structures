@@ -89,4 +89,13 @@
   .gradient-card {
     background: linear-gradient(180deg, hsl(220 18% 12%) 0%, hsl(220 18% 10%) 100%);
   }
+
+  @keyframes scan-line {
+    0% { top: 0; }
+    100% { top: 100%; }
+  }
+
+  .animate-scan-line {
+    animation: scan-line 3s linear infinite;
+  }
 }

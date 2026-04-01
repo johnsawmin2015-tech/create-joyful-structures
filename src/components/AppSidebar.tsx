@@ -1,4 +1,4 @@
-import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut } from "lucide-react";
+import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut, Monitor, BarChart3, Search, Brain } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useLocation, useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -18,8 +18,12 @@ import {
 
 const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
+  { title: "Live Monitor", url: "/live-monitor", icon: Monitor },
   { title: "Cameras", url: "/cameras", icon: Camera },
   { title: "Alerts", url: "/alerts", icon: Bell },
+  { title: "Analytics", url: "/analytics", icon: BarChart3 },
+  { title: "Forensic Search", url: "/forensic-search", icon: Search },
+  { title: "AI Models", url: "/ai-models", icon: Brain },
   { title: "Users", url: "/users", icon: Users },
   { title: "Settings", url: "/settings", icon: Settings },
 ];
