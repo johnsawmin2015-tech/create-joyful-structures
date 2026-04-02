@@ -37,6 +37,7 @@ const App = () => (
           <Route path="/ai-models" element={<ProtectedRoute><AIModels /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

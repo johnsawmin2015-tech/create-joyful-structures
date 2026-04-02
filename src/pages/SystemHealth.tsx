@@ -12,15 +12,16 @@ import {
 } from "recharts";
 
 // Simulated microservice statuses
-const SERVICES = [
-  { name: "auth-service", health: "healthy" as const, latency: 12, uptime: 99.99, cpu: 18, mem: 34 },
-  { name: "camera-service", health: "healthy" as const, latency: 8, uptime: 99.98, cpu: 22, mem: 41 },
-  { name: "inference-service", health: "healthy" as const, latency: 45, uptime: 99.95, cpu: 78, mem: 72 },
-  { name: "alert-service", health: "healthy" as const, latency: 15, uptime: 99.97, cpu: 12, mem: 28 },
-  { name: "recording-service", health: "degraded" as const as "healthy" | "degraded" | "down", latency: 120, uptime: 99.80, cpu: 55, mem: 68 },
-  { name: "analytics-service", health: "healthy" as const, latency: 22, uptime: 99.96, cpu: 35, mem: 45 },
-  { name: "notification-service", health: "healthy" as const, latency: 18, uptime: 99.99, cpu: 8, mem: 22 },
-  { name: "user-service", health: "healthy" as const, latency: 10, uptime: 99.99, cpu: 6, mem: 18 },
+type HealthStatus = "healthy" | "degraded" | "down";
+const SERVICES: Array<{ name: string; health: HealthStatus; latency: number; uptime: number; cpu: number; mem: number }> = [
+  { name: "auth-service", health: "healthy", latency: 12, uptime: 99.99, cpu: 18, mem: 34 },
+  { name: "camera-service", health: "healthy", latency: 8, uptime: 99.98, cpu: 22, mem: 41 },
+  { name: "inference-service", health: "healthy", latency: 45, uptime: 99.95, cpu: 78, mem: 72 },
+  { name: "alert-service", health: "healthy", latency: 15, uptime: 99.97, cpu: 12, mem: 28 },
+  { name: "recording-service", health: "degraded", latency: 120, uptime: 99.80, cpu: 55, mem: 68 },
+  { name: "analytics-service", health: "healthy", latency: 22, uptime: 99.96, cpu: 35, mem: 45 },
+  { name: "notification-service", health: "healthy", latency: 18, uptime: 99.99, cpu: 8, mem: 22 },
+  { name: "user-service", health: "healthy", latency: 10, uptime: 99.99, cpu: 6, mem: 18 },
 ];
 
 const GPU_NODES = [
