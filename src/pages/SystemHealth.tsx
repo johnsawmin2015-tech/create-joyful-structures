@@ -3,12 +3,12 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import {
-  Server, Cpu, HardDrive, Wifi, Activity, CheckCircle2,
-  AlertTriangle, XCircle, Clock, Zap, Database, BarChart3,
+  Server, Cpu, HardDrive, Activity, CheckCircle2,
+  AlertTriangle, XCircle, Clock, Zap,
 } from "lucide-react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip,
-  ResponsiveContainer, BarChart, Bar, Cell,
+  ResponsiveContainer,
 } from "recharts";
 
 // Simulated microservice statuses
