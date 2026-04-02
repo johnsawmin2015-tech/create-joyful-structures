@@ -13,6 +13,7 @@ import ForensicSearch from "./pages/ForensicSearch";
 import AIModels from "./pages/AIModels";
 import UsersPage from "./pages/UsersPage";
 import SettingsPage from "./pages/SettingsPage";
+import SystemHealth from "./pages/SystemHealth";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -36,6 +37,7 @@ const App = () => (
           <Route path="/ai-models" element={<ProtectedRoute><AIModels /></ProtectedRoute>} />
           <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
           <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+          <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>
