@@ -13,6 +13,7 @@ import ForensicSearch from "./pages/ForensicSearch";
 import AIModels from "./pages/AIModels";
 import UsersPage from "./pages/UsersPage";
 import SettingsPage from "./pages/SettingsPage";
+import SystemHealth from "./pages/SystemHealth";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 

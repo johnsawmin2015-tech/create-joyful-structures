@@ -5,10 +5,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import {
-  Bell, Check, CheckCheck, AlertTriangle, ShieldAlert,
-  Clock, Filter, BarChart3,
-} from "lucide-react";
+import { Bell, Check, CheckCheck, ShieldAlert } from "lucide-react";
 import { format, formatDistanceToNow } from "date-fns";
 import { toast } from "sonner";
 

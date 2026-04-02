@@ -17,7 +17,7 @@ const SERVICES = [
   { name: "camera-service", health: "healthy" as const, latency: 8, uptime: 99.98, cpu: 22, mem: 41 },
   { name: "inference-service", health: "healthy" as const, latency: 45, uptime: 99.95, cpu: 78, mem: 72 },
   { name: "alert-service", health: "healthy" as const, latency: 15, uptime: 99.97, cpu: 12, mem: 28 },
-  { name: "recording-service", health: "degraded" as const, latency: 120, uptime: 99.80, cpu: 55, mem: 68 },
+  { name: "recording-service", health: "degraded" as const as "healthy" | "degraded" | "down", latency: 120, uptime: 99.80, cpu: 55, mem: 68 },
   { name: "analytics-service", health: "healthy" as const, latency: 22, uptime: 99.96, cpu: 35, mem: 45 },
   { name: "notification-service", health: "healthy" as const, latency: 18, uptime: 99.99, cpu: 8, mem: 22 },
   { name: "user-service", health: "healthy" as const, latency: 10, uptime: 99.99, cpu: 6, mem: 18 },

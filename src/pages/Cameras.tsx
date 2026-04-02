@@ -12,10 +12,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   Camera, Plus, Trash2, Wifi, WifiOff, AlertTriangle,
-  Signal, HardDrive, Thermometer, Activity,
+  Signal, Thermometer, Activity,
 } from "lucide-react";
 import { toast } from "sonner";
-import { format } from "date-fns";
 
 // Simulated per-camera health metrics
 function getCameraHealth(status: string) {
