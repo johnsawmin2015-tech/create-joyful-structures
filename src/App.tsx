@@ -14,6 +14,7 @@ import AIModels from "./pages/AIModels";
 import UsersPage from "./pages/UsersPage";
 import SettingsPage from "./pages/SettingsPage";
 import SystemHealth from "./pages/SystemHealth";
+import FloorplanView from "./pages/FloorplanView";
 import NotFound from "./pages/NotFound";
 import { ProtectedRoute } from "./components/ProtectedRoute";
 
@@ -31,6 +32,7 @@ const App = () => (
           <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
           <Route path="/live-monitor" element={<ProtectedRoute><LiveMonitor /></ProtectedRoute>} />
           <Route path="/cameras" element={<ProtectedRoute><Cameras /></ProtectedRoute>} />
+          <Route path="/floorplan" element={<ProtectedRoute><FloorplanView /></ProtectedRoute>} />
           <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
           <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
           <Route path="/forensic-search" element={<ProtectedRoute><ForensicSearch /></ProtectedRoute>} />

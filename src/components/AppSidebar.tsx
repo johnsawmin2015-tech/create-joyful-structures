@@ -1,6 +1,6 @@
-import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut, Monitor, BarChart3, Search, Brain, HeartPulse } from "lucide-react";
+import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut, Monitor, BarChart3, Search, Brain, HeartPulse, Map } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import {
@@ -20,6 +20,7 @@ const navItems = [
   { title: "Dashboard", url: "/dashboard", icon: LayoutDashboard },
   { title: "Live Monitor", url: "/live-monitor", icon: Monitor },
   { title: "Cameras", url: "/cameras", icon: Camera },
+  { title: "Floorplan", url: "/floorplan", icon: Map },
   { title: "Alerts", url: "/alerts", icon: Bell },
   { title: "Analytics", url: "/analytics", icon: BarChart3 },
   { title: "Forensic Search", url: "/forensic-search", icon: Search },
@@ -46,7 +47,7 @@ export function AppSidebar() {
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-6">
             <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary" />
+              <Shield className="h-6 w-6 text-primary animate-pulse-glow" />
               {!collapsed && (
                 <span className="text-lg font-bold tracking-tight text-foreground text-glow-cyan">
                   SentinelCore
@@ -62,7 +63,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
-                      className="hover:bg-sentinel-surface-hover transition-colors"
+                      className="hover:bg-sentinel-surface-hover transition-colors relative"
                       activeClassName="bg-sentinel-surface text-primary glow-cyan"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
