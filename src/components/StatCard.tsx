@@ -10,16 +10,16 @@ interface StatCardProps {
 }
 
 const variantStyles = {
-  default: "border-border",
+  default: "border-border hover:animate-border-pulse",
   cyan: "border-glow glow-cyan",
   red: "border-sentinel-red/30 glow-red",
-  amber: "border-sentinel-amber/30",
-  green: "border-sentinel-green/30",
+  amber: "border-sentinel-amber/30 glow-amber",
+  green: "border-sentinel-green/30 glow-green",
 };
 
 const iconVariant = {
   default: "text-muted-foreground",
-  cyan: "text-primary",
+  cyan: "text-primary animate-flicker",
   red: "text-sentinel-red",
   amber: "text-sentinel-amber",
   green: "text-sentinel-green",
@@ -27,7 +27,7 @@ const iconVariant = {
 
 export function StatCard({ title, value, icon: Icon, trend, variant = "default" }: StatCardProps) {
   return (
-    <div className={cn("gradient-card rounded-lg border p-5 transition-all hover:scale-[1.02]", variantStyles[variant])}>
+    <div className={cn("gradient-card rounded-lg border p-5 transition-all hover:scale-[1.02] animate-scale-in", variantStyles[variant])}>
       <div className="flex items-center justify-between">
         <p className="text-sm font-medium text-muted-foreground">{title}</p>
         <Icon className={cn("h-5 w-5", iconVariant[variant])} />
