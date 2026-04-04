@@ -1,65 +1,67 @@
 
 
-## Plan: Theme Toggle, Enhanced Aesthetics, and 3D Floorplan View
+## Plan: Advanced Dashboard, Live Monitor & Analytics + Demo Camera Units
 
-The user requests three things: (1) dark/light theme toggle, (2) refined tactical glow/animation aesthetic, and (3) an interactive 3D floorplan with sensor overlays. Additionally, they want to verify the full end-to-end flow across all pages.
-
----
-
-### 1. Dark/Light Theme Toggle
-
-**Approach**: Use `next-themes` (already installed) with a `ThemeProvider` wrapping the app.
-
-- **`src/components/ThemeProvider.tsx`** — Wrap `next-themes` `ThemeProvider` with `attribute="class"`, `defaultTheme="dark"`.
-- **`src/index.css`** — Add a `.light` / `:root` (light mode) variable set alongside the existing dark variables. Light mode uses white/gray backgrounds with the same cyan/red/amber accent palette but adjusted for readability.
-- **`src/components/ThemeToggle.tsx`** — A `Sun`/`Moon` icon button using `useTheme()` to toggle. Styled with a glow border on hover.
-- **`src/components/DashboardLayout.tsx`** — Add `ThemeToggle` to the header bar next to `SidebarTrigger`.
-- **`src/main.tsx`** — Wrap `<App />` in `<ThemeProvider>`.
-- **`src/pages/Auth.tsx`** — Add `ThemeToggle` to the auth page corner.
+### Overview
+Massively upgrade the three core pages to feel like a world-class security command center, and add hardcoded demo camera units so Live Monitor always has feeds to display even without database data.
 
 ---
 
-### 2. Refined Tactical Aesthetic — More Glow & Animations
+### 1. Dashboard — Command Center Overhaul
 
-Enhance the existing dark-ops feel across the app:
+**Current state**: 4 stat cards, 1 sparkline chart, 1 infrastructure panel, recent alerts list, camera fleet list.
 
-- **`src/index.css`** — Add new utility classes:
-  - `.glow-amber`, `.glow-green` (box-shadow variants)
-  - `.animate-flicker` (subtle opacity flicker for status indicators)
-  - `.animate-border-pulse` (border color pulse for active cards)
-  - `.glass-panel` (backdrop-blur + semi-transparent bg for cards)
-- **`tailwind.config.ts`** — Add `flicker`, `border-pulse`, `fade-in`, `scale-in` keyframes/animations.
-- **`src/components/StatCard.tsx`** — Add `animate-fade-in` on mount, enhanced glow on hover, subtle inner border gradient.
-- **`src/components/AppSidebar.tsx`** — Add animated cyan line indicator on active nav item; pulsing shield icon in header.
-- **`src/components/DashboardLayout.tsx`** — Add a subtle animated scan-line across the header; frosted glass header.
-- **All page headers** — Add `animate-fade-in` to page content containers for smooth page transitions.
+**Upgrades**:
+- **Animated threat level ring** — Replace the text-only threat badge with an animated SVG radial gauge (green/amber/red arc) showing real-time threat score
+- **Live activity ticker** — Horizontal scrolling ticker bar at the top showing the latest detection events in real-time (monospaced, cyan text)
+- **World clock / uptime counter** — Running uptime timer with millisecond precision in the header
+- **Enhanced stat cards** — Add animated sparkline mini-charts inside each stat card (tiny inline SVG), plus percentage change indicators with up/down arrows
+- **Detection heatmap grid** — A new 24h × 7-day grid heatmap (like GitHub contributions) showing detection density per hour, colored cyan→amber→red
+- **Camera health matrix** — Replace the simple list with a grid of camera tiles showing colored status dots with live ping latency values
+- **Real-time event log** — A scrollable terminal-style log panel with monospaced text, timestamp prefixes, and color-coded severity (like a security operations center console)
+- **Network topology mini-map** — Small SVG showing connected services/cameras as nodes with animated connection lines
 
----
+### 2. Live Monitor — Advanced Surveillance Grid
 
-### 3. Interactive 3D Floorplan View (New Page)
+**Current state**: Grid layout selector, simulated bounding boxes, basic HUD overlay.
 
-Since we can't use WebGL/Three.js easily without heavy deps, we'll build an **isometric 2.5D SVG/Canvas floorplan** that feels 3D using CSS transforms and layered SVG — lightweight, no extra dependencies.
+**Add 12 hardcoded demo camera units** that render even when the database is empty:
+```
+CAM-01: Main Entrance (online)     CAM-07: Server Room (online)
+CAM-02: Parking Lot A (online)     CAM-08: Rooftop (online)  
+CAM-03: Loading Dock (online)      CAM-09: Stairwell B (offline)
+CAM-04: Lobby (online)             CAM-10: Emergency Exit (error)
+CAM-05: Corridor East (online)     CAM-11: Warehouse (online)
+CAM-06: Perimeter North (online)   CAM-12: Reception (online)
+```
 
-- **`src/pages/FloorplanView.tsx`** — New page with:
-  - **Isometric grid** rendered via CSS `transform: rotateX(60deg) rotateZ(-45deg)` on a container, giving a 3D perspective to a 2D SVG floor layout.
-  - **Camera coverage cones** — SVG polygon overlays with cyan semi-transparent fills, positioned per camera's coordinates (from cameras table, with added `x`/`y`/`angle` fields or simulated).
-  - **Live sensor dots** — Animated pulsing circles at sensor locations showing motion/door/temperature status.
-  - **Historical incident heatmap** — SVG rect grid colored by detection density (from detections table), using a red-yellow gradient overlay with opacity based on count.
-  - **Breach prediction zones** — Highlighted areas combining low-coverage + high-incident history, shown as pulsing amber zones with "Predicted Risk" labels.
-  - **Interactive controls**: Click a camera cone to see its details; hover sensors for tooltips; toggle layers (cameras/sensors/heatmap/predictions) via toolbar.
-  - **Floorplan layout**: A simulated building outline (conference rooms, corridors, entrance, parking) drawn with SVG paths.
+**Enhanced feed simulation**:
+- **Smooth bounding box interpolation** — Lerp box positions between frames instead of jumping (requestAnimationFrame-based)
+- **Motion trails** — Fading ghost trail behind moving bounding boxes (3-frame history with decreasing opacity)
+- **Zone overlay toggle** — Button to show/hide virtual tripwire lines and restricted zone polygons drawn as colored SVG overlays on each feed
+- **Per-camera event ticker** — Small scrolling text at the bottom of each feed showing recent detections for that camera
+- **Recording indicator** — Pulsing red "REC" dot with duration timer in the top-right corner
+- **PTZ control panel** — On hover/click, show directional arrows (pan left/right/up/down) and zoom +/- buttons (simulated, visual only)
+- **Audio level meter** — Tiny animated bar meter showing simulated audio levels
+- **Snapshot button** — Camera icon button that triggers a brief flash animation
+- **Night vision toggle** — Button that applies a green-tinted CSS filter to simulate IR mode
+- **Connection quality bar** — 4-bar signal strength indicator per camera
+- **Toolbar enhancements** — Add filter by status (online/offline/all), search cameras by name, and a "theater mode" button that hides the sidebar
 
-- **Database migration** — Add a `floorplan_positions` table (`id`, `camera_id`, `x`, `y`, `angle`, `floor`) or simply use simulated positions keyed to existing camera IDs.
+### 3. Analytics — Intelligence Hub Overhaul
 
-- **Seed data** — Position the 8 existing cameras on the floorplan with x/y/angle coordinates; generate ~50 historical incident points for the heatmap.
+**Current state**: 4 summary stats, 5 charts (timeline, pie, bar, horizontal bar, confidence histogram).
 
-- **Route & nav** — Add `/floorplan` route in `App.tsx`, add "Floorplan" nav item with `Map` icon in `AppSidebar.tsx`.
-
----
-
-### 4. End-to-End Verification
-
-After implementation, navigate through every page (Auth → Dashboard → Live Monitor → Cameras → Alerts → Analytics → Forensic Search → AI Models → System Health → Floorplan) to verify rendering, data loading, and interactions.
+**Upgrades**:
+- **Radar chart** — Multi-axis radar showing detection performance across object types (accuracy, count, avg confidence)
+- **Treemap chart** — Detection distribution by camera + object type as a nested treemap
+- **Funnel chart** — Alert lifecycle funnel: Detected → Alerted → Acknowledged → Resolved
+- **Correlation scatter plot** — Confidence vs detection count per camera, bubble size = alert count
+- **Time-of-day pattern chart** — Radial/polar chart showing detection patterns by hour (clock-shaped)
+- **Comparative period selector** — Toggle between "Last 24h", "Last 7 days", "Last 30 days" with animated chart transitions
+- **KPI trend indicators** — Each summary stat gets a trend arrow with percentage change vs. previous period
+- **Export buttons** — CSV download for each chart's underlying data
+- **Live updating counters** — Detection/alert counts animate (count up effect) on page load
 
 ---
 
@@ -67,29 +69,24 @@ After implementation, navigate through every page (Auth → Dashboard → Live M
 
 | Item | Approach |
 |---|---|
-| Theme system | `next-themes` with `class` strategy, CSS variable swap |
-| Light palette | White bg `0 0% 100%`, gray cards `220 14% 96%`, same accent hues |
-| 3D floorplan | CSS isometric transform + layered SVGs, no Three.js |
-| Heatmap | Grid of SVG rects, opacity mapped to detection count per zone |
-| Coverage cones | SVG polygons with `clip-path` or plain `<polygon>`, semi-transparent |
-| Breach prediction | Algorithmic: zones with coverage gaps + high historical incidents |
-| New table | `floorplan_positions` with camera_id, x, y, rotation, floor |
-| New animations | CSS keyframes added to tailwind config |
+| Demo cameras | Hardcoded array of 12 units merged with DB cameras (DB takes priority by name) |
+| Smooth bbox | `requestAnimationFrame` + linear interpolation between target positions |
+| Motion trails | Array of 3 previous positions rendered with opacity 0.6/0.3/0.1 |
+| Heatmap grid | CSS Grid of small divs, colored via inline style based on count |
+| Radar chart | Recharts `RadarChart` component |
+| Treemap | Recharts `Treemap` component |
+| Count-up animation | Custom hook with `requestAnimationFrame` incrementing from 0 to target |
+| Night vision | CSS `filter: hue-rotate(80deg) saturate(3) brightness(0.7)` toggle |
+| PTZ controls | Absolute-positioned arrow buttons, visual only |
+| Activity ticker | CSS `@keyframes` horizontal scroll animation on a flex container |
 
-### Files to Create/Modify
+### Files to Modify
 
-| File | Action |
+| File | Changes |
 |---|---|
-| `src/components/ThemeProvider.tsx` | Create |
-| `src/components/ThemeToggle.tsx` | Create |
-| `src/pages/FloorplanView.tsx` | Create |
-| `src/main.tsx` | Modify (wrap ThemeProvider) |
-| `src/index.css` | Modify (light theme vars, new utilities) |
-| `tailwind.config.ts` | Modify (new animations) |
-| `src/components/DashboardLayout.tsx` | Modify (theme toggle, glass header) |
-| `src/components/AppSidebar.tsx` | Modify (floorplan nav, active indicator) |
-| `src/components/StatCard.tsx` | Modify (animations) |
-| `src/App.tsx` | Modify (floorplan route) |
-| `src/pages/Auth.tsx` | Modify (theme toggle) |
-| Migration SQL | Create (floorplan_positions + seed) |
+| `src/pages/Dashboard.tsx` | Full rewrite — threat gauge, heatmap grid, event log, network mini-map, enhanced stats |
+| `src/pages/LiveMonitor.tsx` | Full rewrite — 12 demo units, smooth bbox, motion trails, PTZ, zones, night vision, theater mode |
+| `src/pages/Analytics.tsx` | Full rewrite — radar, treemap, funnel, scatter, polar, period selector, export, count-up |
+| `src/index.css` | New utility classes for night-vision filter, ticker scroll, recording indicator |
+| `tailwind.config.ts` | New keyframes for ticker-scroll, count-up |
 
