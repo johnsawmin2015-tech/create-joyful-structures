@@ -1,0 +1,38 @@
+/* SENTINEL Logo Motion Identity */
+
+@keyframes sentinel-idle-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px hsl(var(--sentinel-cyan-glow) / 0.2));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px hsl(var(--sentinel-cyan-glow) / 0.5));
+  }
+}
+
+@keyframes sentinel-alert-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 6px hsl(var(--sentinel-red) / 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 20px hsl(var(--sentinel-red) / 0.7));
+  }
+}
+
+@keyframes sentinel-eye-scan {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(2px); }
+  75% { transform: translateX(-2px); }
+}
+
+.sentinel-logo-idle {
+  animation: sentinel-idle-pulse 3s ease-in-out infinite;
+}
+
+.sentinel-logo-alert {
+  animation: sentinel-alert-pulse 1s ease-in-out infinite;
+}
+
+.sentinel-eye {
+  animation: sentinel-eye-scan 6s ease-in-out infinite;
+  transform-origin: center;
+}
