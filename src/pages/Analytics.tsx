@@ -3,33 +3,40 @@ import { DashboardLayout } from "@/components/DashboardLayout";
 import { supabase } from "@/integrations/supabase/client";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
 import {
   BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, AreaChart, Area,
   RadarChart, Radar, PolarGrid, PolarAngleAxis, PolarRadiusAxis, Treemap,
   ScatterChart, Scatter, XAxis, YAxis, CartesianGrid, Tooltip,
   ResponsiveContainer, Legend, ZAxis,
 } from "recharts";
-import { Activity, Eye, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, Download, Clock } from "lucide-react";
-import { format, subHours, subDays, startOfHour } from "date-fns";
+import { Activity, Eye, AlertTriangle, TrendingUp, ArrowUpRight, ArrowDownRight, Download, Clock, Shield, Zap } from "lucide-react";
+import { format } from "date-fns";
 
-const COLORS = {
-  cyan: "hsl(185, 70%, 50%)",
-  red: "hsl(0, 72%, 55%)",
-  amber: "hsl(38, 92%, 55%)",
-  green: "hsl(142, 60%, 45%)",
-  purple: "hsl(270, 60%, 55%)",
-  blue: "hsl(210, 70%, 55%)",
+/* ── Refined color palette using design tokens ── */
+const PALETTE = {
+  primary:   "hsl(195, 85%, 50%)",
+  secondary: "hsl(195, 85%, 38%)",
+  threat:    "hsl(0, 72%, 55%)",
+  warning:   "hsl(38, 92%, 55%)",
+  success:   "hsl(152, 60%, 45%)",
+  accent:    "hsl(270, 55%, 55%)",
+  info:      "hsl(210, 65%, 55%)",
+  muted:     "hsl(222, 16%, 30%)",
 };
 
 const tooltipStyle = {
-  background: "hsl(var(--card))",
-  border: "1px solid hsl(var(--border))",
-  borderRadius: 8,
-  color: "hsl(var(--foreground))",
+  background: "hsl(222, 22%, 10%)",
+  border: "1px solid hsl(222, 16%, 18%)",
+  borderRadius: 10,
+  color: "hsl(210, 20%, 92%)",
+  fontSize: 12,
+  boxShadow: "0 8px 32px hsl(0 0% 0% / 0.4)",
 };
 
-// Count-up hook
+const gridStroke = "hsl(222, 16%, 16%)";
+const axisStyle = { fontSize: 9, fill: "hsl(215, 12%, 50%)" };
+
+/* ── Hooks ── */
 function useCountUp(target: number, duration = 1000) {
   const [value, setValue] = useState(0);
   useEffect(() => {
@@ -38,7 +45,8 @@ function useCountUp(target: number, duration = 1000) {
     let raf: number;
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1);
-      setValue(Math.floor(p * target));
+      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      setValue(Math.floor(eased * target));
       if (p < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -60,7 +68,7 @@ function exportCSV(data: any[], filename: string) {
   URL.revokeObjectURL(url);
 }
 
-// Demo data generators
+/* ── Demo data ── */
 function generateDemoDetections() {
   const types = ["person", "vehicle", "bag", "animal", "license_plate"];
   const now = Date.now();
@@ -90,6 +98,53 @@ function generateDemoAlerts() {
 
 type Period = "24h" | "7d" | "30d";
 
+/* ── KPI Card ── */
+function KPICard({ label, value, icon: Icon, iconColor, trend, trendUp, delay = 0 }: {
+  label: string; value: string | number; icon: any; iconColor: string;
+  trend: string; trendUp: boolean; delay?: number;
+}) {
+  return (
+    <div
+      className="glass-panel-strong rounded-xl p-5 animate-fade-in-up group hover:glow-cyan-strong transition-all duration-300"
+      style={{ animationDelay: `${delay}s` }}
+    >
+      <div className="flex items-center justify-between mb-3">
+        <div className="p-2 rounded-lg bg-muted/50">
+          <Icon className={`h-4 w-4 ${iconColor}`} />
+        </div>
+        <span className={`text-[10px] font-mono flex items-center gap-0.5 ${trendUp ? "text-sentinel-green" : "text-sentinel-red"}`}>
+          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+          {trend}
+        </span>
+      </div>
+      <p className="text-3xl font-bold font-mono tracking-tight">{value}</p>
+      <p className="text-xs text-muted-foreground mt-1 tracking-wider uppercase">{label}</p>
+    </div>
+  );
+}
+
+/* ── Chart Card ── */
+function ChartCard({ title, children, onExport, icon: Icon, span = 1 }: {
+  title: string; children: React.ReactNode; onExport?: () => void; icon?: any; span?: number;
+}) {
+  return (
+    <div className={`glass-panel-strong rounded-xl p-5 animate-fade-in-up ${span === 2 ? "lg:col-span-2" : ""}`}>
+      <div className="flex items-center justify-between mb-5">
+        <div className="flex items-center gap-2.5">
+          {Icon && <Icon className="h-4 w-4 text-primary" />}
+          <h2 className="text-sm font-semibold tracking-wide">{title}</h2>
+        </div>
+        {onExport && (
+          <Button variant="ghost" size="sm" className="h-7 text-[10px] text-muted-foreground hover:text-foreground" onClick={onExport}>
+            <Download className="h-3 w-3 mr-1" />CSV
+          </Button>
+        )}
+      </div>
+      {children}
+    </div>
+  );
+}
+
 export default function Analytics() {
   const [period, setPeriod] = useState<Period>("7d");
 
@@ -109,11 +164,9 @@ export default function Analytics() {
     },
   });
 
-  // Use demo data when DB is empty
   const detections = useMemo(() => (rawDetections && rawDetections.length > 0) ? rawDetections : generateDemoDetections(), [rawDetections]);
   const alerts = useMemo(() => (rawAlerts && rawAlerts.length > 0) ? rawAlerts : generateDemoAlerts(), [rawAlerts]);
 
-  // Filter by period
   const periodMs = period === "24h" ? 86400000 : period === "7d" ? 7 * 86400000 : 30 * 86400000;
   const cutoff = Date.now() - periodMs;
   const filteredDet = detections.filter((d) => new Date(d.created_at).getTime() > cutoff);
@@ -126,23 +179,23 @@ export default function Analytics() {
     ? ((filteredDet.reduce((s, d) => s + Number(d.confidence), 0) / filteredDet.length) * 100).toFixed(1)
     : "—";
 
-  // Pie: detections by object type
+  // Pie data
   const objectTypeCounts = filteredDet.reduce<Record<string, number>>((acc, d) => {
     acc[d.object_type] = (acc[d.object_type] || 0) + 1;
     return acc;
   }, {});
   const pieData = Object.entries(objectTypeCounts).map(([name, value]) => ({ name, value }));
-  const pieColors = [COLORS.cyan, COLORS.amber, COLORS.green, COLORS.red, COLORS.purple, COLORS.blue];
+  const pieColors = [PALETTE.primary, PALETTE.warning, PALETTE.success, PALETTE.threat, PALETTE.accent, PALETTE.info];
 
-  // Bar: alerts by severity
+  // Severity data
   const severityCounts = filteredAlerts.reduce<Record<string, number>>((acc, a) => {
     acc[a.severity] = (acc[a.severity] || 0) + 1;
     return acc;
   }, {});
   const severityData = ["low", "medium", "high", "critical"].map((s) => ({ severity: s, count: severityCounts[s] || 0 }));
-  const severityColors: Record<string, string> = { low: COLORS.green, medium: COLORS.amber, high: COLORS.red, critical: COLORS.purple };
+  const severityColors: Record<string, string> = { low: PALETTE.success, medium: PALETTE.warning, high: PALETTE.threat, critical: PALETTE.accent };
 
-  // Area timeline
+  // Timeline
   const timelineSlots = period === "24h" ? 24 : period === "7d" ? 7 * 4 : 30;
   const slotMs = periodMs / timelineSlots;
   const timeline = Array.from({ length: timelineSlots }, (_, i) => {
@@ -155,34 +208,29 @@ export default function Analytics() {
     };
   });
 
-  // Radar: performance by object type
+  // Radar data
   const radarData = Object.entries(objectTypeCounts).map(([type, count]) => {
     const typeDetections = filteredDet.filter((d) => d.object_type === type);
     const avgC = typeDetections.reduce((s, d) => s + Number(d.confidence), 0) / (typeDetections.length || 1);
     return { type, count: Math.min(count, 100), confidence: Math.round(avgC * 100), accuracy: Math.round(70 + Math.random() * 25) };
   });
 
-  // Treemap: detections by camera
+  // Camera detection counts
   const cameraDetCounts = filteredDet.reduce<Record<string, number>>((acc, d) => {
     const cid = d.camera_id ?? "unknown";
     acc[cid] = (acc[cid] || 0) + 1;
     return acc;
   }, {});
-  const treemapData = Object.entries(cameraDetCounts).map(([name, size]) => ({
-    name: name.length > 10 ? name.slice(0, 8) + "…" : name,
-    size,
-    fill: pieColors[Math.abs(name.charCodeAt(0)) % pieColors.length],
-  }));
 
-  // Funnel: alert lifecycle
+  // Funnel data
   const funnelData = [
-    { name: "Detected", value: filteredDet.length, fill: COLORS.cyan },
-    { name: "Alerted", value: filteredAlerts.length, fill: COLORS.amber },
-    { name: "Acknowledged", value: filteredAlerts.filter((a) => a.acknowledged).length, fill: COLORS.green },
-    { name: "Resolved", value: Math.floor(filteredAlerts.filter((a) => a.acknowledged).length * 0.85), fill: COLORS.blue },
+    { name: "Detected", value: filteredDet.length, color: PALETTE.primary },
+    { name: "Alerted", value: filteredAlerts.length, color: PALETTE.warning },
+    { name: "Acknowledged", value: filteredAlerts.filter((a) => a.acknowledged).length, color: PALETTE.success },
+    { name: "Resolved", value: Math.floor(filteredAlerts.filter((a) => a.acknowledged).length * 0.85), color: PALETTE.info },
   ];
 
-  // Scatter: confidence vs count per camera
+  // Scatter data
   const scatterData = Object.entries(cameraDetCounts).map(([cam, count]) => {
     const camDets = filteredDet.filter((d) => d.camera_id === cam);
     const avgC = camDets.reduce((s, d) => s + Number(d.confidence), 0) / (camDets.length || 1);
@@ -190,9 +238,9 @@ export default function Analytics() {
     return { camera: cam.slice(0, 8), count, confidence: Math.round(avgC * 100), alerts: camAlerts + 1 };
   });
 
-  // Hourly pattern (polar-like using bar chart in circular feel)
+  // Hourly pattern
   const hourlyPattern = Array.from({ length: 24 }, (_, h) => ({
-    hour: `${h}:00`,
+    hour: `${String(h).padStart(2, "0")}:00`,
     detections: filteredDet.filter((d) => new Date(d.created_at).getHours() === h).length,
   }));
 
@@ -211,206 +259,210 @@ export default function Analytics() {
   return (
     <DashboardLayout>
       <div className="space-y-6">
-        <div className="flex items-center justify-between flex-wrap gap-3">
+        {/* Header */}
+        <div className="flex items-center justify-between flex-wrap gap-4">
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">Analytics Intelligence Hub</h1>
-            <p className="text-muted-foreground text-sm mt-1">AI detection metrics, threat analysis & traffic intelligence</p>
+            <div className="flex items-center gap-3">
+              <div className="p-2 rounded-lg bg-primary/10">
+                <Zap className="h-5 w-5 text-primary" />
+              </div>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight">Analytics Intelligence Hub</h1>
+                <p className="text-muted-foreground text-xs mt-0.5 tracking-wider">
+                  AI detection metrics · threat analysis · traffic intelligence
+                </p>
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <Clock className="h-4 w-4 text-muted-foreground" />
+          <div className="flex items-center gap-1.5 bg-muted/30 rounded-lg p-1">
             {(["24h", "7d", "30d"] as Period[]).map((p) => (
-              <Button
+              <button
                 key={p}
-                variant={period === p ? "default" : "outline"}
-                size="sm"
-                className="h-7 text-xs"
+                className={`px-3 py-1.5 rounded-md text-xs font-medium transition-all duration-200 ${
+                  period === p
+                    ? "bg-primary text-primary-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+                }`}
                 onClick={() => setPeriod(p)}
               >
-                {p === "24h" ? "24 Hours" : p === "7d" ? "7 Days" : "30 Days"}
-              </Button>
+                {p === "24h" ? "24H" : p === "7d" ? "7D" : "30D"}
+              </button>
             ))}
           </div>
         </div>
 
-        {/* KPI cards */}
+        {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          {[
-            { label: "Total Detections", value: totalDetections, icon: Eye, color: "text-primary", trend: "+12%", up: true },
-            { label: "Total Alerts", value: totalAlerts, icon: AlertTriangle, color: "text-sentinel-amber", trend: "-5%", up: false },
-            { label: "Unacknowledged", value: unackAlerts, icon: Activity, color: "text-sentinel-red", trend: "+3%", up: true },
-            { label: "Avg Confidence", value: avgConf + "%", icon: TrendingUp, color: "text-sentinel-green", trend: "+1.2%", up: true },
-          ].map((s) => (
-            <div key={s.label} className="gradient-card border border-border rounded-lg p-4 animate-fade-in-up">
-              <div className="flex items-center gap-2 mb-1">
-                <s.icon className={`h-4 w-4 ${s.color}`} />
-                <span className="text-xs text-muted-foreground">{s.label}</span>
-              </div>
-              <div className="flex items-end gap-2">
-                <p className="text-2xl font-bold font-mono">{s.value}</p>
-                <span className={`text-[10px] flex items-center gap-0.5 mb-1 ${s.up ? "text-sentinel-green" : "text-sentinel-red"}`}>
-                  {s.up ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-                  {s.trend}
-                </span>
-              </div>
-            </div>
-          ))}
+          <KPICard label="Total Detections" value={totalDetections} icon={Eye} iconColor="text-primary" trend="+12%" trendUp delay={0} />
+          <KPICard label="Total Alerts" value={totalAlerts} icon={AlertTriangle} iconColor="text-sentinel-amber" trend="-5%" trendUp={false} delay={0.05} />
+          <KPICard label="Unacknowledged" value={unackAlerts} icon={Shield} iconColor="text-sentinel-red" trend="+3%" trendUp delay={0.1} />
+          <KPICard label="Avg Confidence" value={`${avgConf}%`} icon={TrendingUp} iconColor="text-sentinel-green" trend="+1.2%" trendUp delay={0.15} />
         </div>
 
-        {/* Charts grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {/* Activity Timeline */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold">Activity Timeline</h2>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => exportCSV(timeline, "timeline")}>
-                <Download className="h-3 w-3 mr-1" />Export
-              </Button>
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
+        {/* Charts Row 1 */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <ChartCard title="Activity Timeline" icon={Activity} onExport={() => exportCSV(timeline, "timeline")} span={2}>
+            <ResponsiveContainer width="100%" height={260}>
               <AreaChart data={timeline}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="label" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} interval={Math.floor(timelineSlots / 8)} />
-                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+                <defs>
+                  <linearGradient id="gradDet" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.primary} stopOpacity={0.25} />
+                    <stop offset="95%" stopColor={PALETTE.primary} stopOpacity={0} />
+                  </linearGradient>
+                  <linearGradient id="gradAlert" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.threat} stopOpacity={0.2} />
+                    <stop offset="95%" stopColor={PALETTE.threat} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis dataKey="label" tick={axisStyle} interval={Math.floor(timelineSlots / 8)} />
+                <YAxis tick={axisStyle} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Area type="monotone" dataKey="detections" stroke={COLORS.cyan} fill={COLORS.cyan} fillOpacity={0.12} strokeWidth={2} name="Detections" />
-                <Area type="monotone" dataKey="alerts" stroke={COLORS.red} fill={COLORS.red} fillOpacity={0.12} strokeWidth={2} name="Alerts" />
-                <Legend />
+                <Area type="monotone" dataKey="detections" stroke={PALETTE.primary} fill="url(#gradDet)" strokeWidth={2} name="Detections" />
+                <Area type="monotone" dataKey="alerts" stroke={PALETTE.threat} fill="url(#gradAlert)" strokeWidth={1.5} name="Alerts" />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
               </AreaChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
 
-          {/* Detection by Object Type */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold">Detections by Object Type</h2>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => exportCSV(pieData, "object-types")}>
-                <Download className="h-3 w-3 mr-1" />Export
-              </Button>
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
+          <ChartCard title="Object Distribution" icon={Eye}>
+            <ResponsiveContainer width="100%" height={260}>
               <PieChart>
-                <Pie data={pieData} cx="50%" cy="50%" outerRadius={85} innerRadius={50} dataKey="value" label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`} labelLine={false}>
+                <Pie
+                  data={pieData}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={90}
+                  innerRadius={55}
+                  dataKey="value"
+                  paddingAngle={3}
+                  strokeWidth={0}
+                >
                   {pieData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
                 </Pie>
                 <Tooltip contentStyle={tooltipStyle} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
               </PieChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
+        </div>
 
-          {/* Radar: Performance by type */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <h2 className="text-sm font-semibold mb-4">Detection Performance Radar</h2>
-            <ResponsiveContainer width="100%" height={260}>
+        {/* Charts Row 2 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartCard title="Detection Performance Radar" icon={TrendingUp}>
+            <ResponsiveContainer width="100%" height={280}>
               <RadarChart data={radarData}>
-                <PolarGrid stroke="hsl(var(--border))" />
-                <PolarAngleAxis dataKey="type" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <PolarRadiusAxis tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} />
-                <Radar name="Count" dataKey="count" stroke={COLORS.cyan} fill={COLORS.cyan} fillOpacity={0.2} />
-                <Radar name="Confidence" dataKey="confidence" stroke={COLORS.green} fill={COLORS.green} fillOpacity={0.15} />
-                <Radar name="Accuracy" dataKey="accuracy" stroke={COLORS.amber} fill={COLORS.amber} fillOpacity={0.1} />
-                <Legend />
+                <PolarGrid stroke={gridStroke} />
+                <PolarAngleAxis dataKey="type" tick={{ fontSize: 10, fill: "hsl(215, 12%, 55%)" }} />
+                <PolarRadiusAxis tick={{ fontSize: 8, fill: "hsl(215, 12%, 40%)" }} />
+                <Radar name="Volume" dataKey="count" stroke={PALETTE.primary} fill={PALETTE.primary} fillOpacity={0.15} strokeWidth={2} />
+                <Radar name="Confidence" dataKey="confidence" stroke={PALETTE.success} fill={PALETTE.success} fillOpacity={0.1} strokeWidth={1.5} />
+                <Radar name="Accuracy" dataKey="accuracy" stroke={PALETTE.warning} fill={PALETTE.warning} fillOpacity={0.08} strokeWidth={1.5} />
+                <Legend wrapperStyle={{ fontSize: 10 }} />
                 <Tooltip contentStyle={tooltipStyle} />
               </RadarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
 
-          {/* Alerts by Severity */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold">Alerts by Severity</h2>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => exportCSV(severityData, "severity")}>
-                <Download className="h-3 w-3 mr-1" />Export
-              </Button>
-            </div>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={severityData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="severity" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+          <ChartCard title="Alerts by Severity" icon={AlertTriangle} onExport={() => exportCSV(severityData, "severity")}>
+            <ResponsiveContainer width="100%" height={280}>
+              <BarChart data={severityData} barCategoryGap="20%">
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="severity" tick={axisStyle} />
+                <YAxis tick={axisStyle} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" radius={[4, 4, 0, 0]}>
+                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
                   {severityData.map((e) => <Cell key={e.severity} fill={severityColors[e.severity]} />)}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
+        </div>
 
-          {/* Alert Lifecycle Funnel */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <h2 className="text-sm font-semibold mb-4">Alert Lifecycle Funnel</h2>
-            <div className="space-y-2">
+        {/* Charts Row 3 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartCard title="Alert Lifecycle Funnel" icon={Shield}>
+            <div className="space-y-3 py-2">
               {funnelData.map((stage, i) => {
-                const width = funnelData[0].value > 0 ? (stage.value / funnelData[0].value) * 100 : 0;
+                const maxVal = funnelData[0].value || 1;
+                const width = (stage.value / maxVal) * 100;
                 return (
-                  <div key={stage.name} className="flex items-center gap-3">
-                    <span className="text-xs text-muted-foreground w-24 text-right">{stage.name}</span>
-                    <div className="flex-1 h-7 rounded-md overflow-hidden bg-muted/30 relative">
+                  <div key={stage.name} className="flex items-center gap-3 group">
+                    <span className="text-xs text-muted-foreground w-28 text-right font-medium">{stage.name}</span>
+                    <div className="flex-1 h-9 rounded-lg overflow-hidden bg-muted/20 relative">
                       <div
-                        className="h-full rounded-md transition-all duration-1000 flex items-center px-2"
-                        style={{ width: `${Math.max(width, 2)}%`, backgroundColor: stage.fill }}
+                        className="h-full rounded-lg transition-all duration-1000 ease-out flex items-center px-3 relative overflow-hidden"
+                        style={{
+                          width: `${Math.max(width, 4)}%`,
+                          background: `linear-gradient(90deg, ${stage.color}, ${stage.color}cc)`,
+                        }}
                       >
-                        <span className="text-[10px] font-mono font-bold text-background">{stage.value}</span>
+                        <div className="absolute inset-0 animate-shimmer" />
+                        <span className="text-xs font-bold font-mono text-primary-foreground relative z-10">{stage.value}</span>
                       </div>
                     </div>
+                    <span className="text-[10px] font-mono text-muted-foreground w-10">{Math.round(width)}%</span>
                   </div>
                 );
               })}
             </div>
-          </div>
+          </ChartCard>
 
-          {/* Scatter: Confidence vs Count */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <h2 className="text-sm font-semibold mb-4">Camera Correlation: Confidence vs Volume</h2>
-            <ResponsiveContainer width="100%" height={240}>
+          <ChartCard title="Camera Correlation" icon={Activity}>
+            <ResponsiveContainer width="100%" height={260}>
               <ScatterChart>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="count" name="Detections" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis dataKey="confidence" name="Confidence %" tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
-                <ZAxis dataKey="alerts" range={[40, 400]} name="Alerts" />
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} />
+                <XAxis dataKey="count" name="Detections" tick={axisStyle} label={{ value: "Detection Count", position: "bottom", fontSize: 9, fill: "hsl(215, 12%, 50%)" }} />
+                <YAxis dataKey="confidence" name="Confidence" tick={axisStyle} label={{ value: "Confidence %", angle: -90, position: "insideLeft", fontSize: 9, fill: "hsl(215, 12%, 50%)" }} />
+                <ZAxis dataKey="alerts" range={[60, 400]} name="Alerts" />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Scatter data={scatterData} fill={COLORS.cyan}>
-                  {scatterData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
+                <Scatter data={scatterData} strokeWidth={1} stroke="hsl(222, 16%, 20%)">
+                  {scatterData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} fillOpacity={0.8} />)}
                 </Scatter>
               </ScatterChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
+        </div>
 
-          {/* Hourly Pattern */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-sm font-semibold">Time-of-Day Detection Pattern</h2>
-              <Button variant="ghost" size="sm" className="h-6 text-[10px]" onClick={() => exportCSV(hourlyPattern, "hourly")}>
-                <Download className="h-3 w-3 mr-1" />Export
-              </Button>
-            </div>
+        {/* Charts Row 4 */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          <ChartCard title="Time-of-Day Pattern" icon={Clock} onExport={() => exportCSV(hourlyPattern, "hourly")}>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={hourlyPattern}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="hour" tick={{ fontSize: 8, fill: "hsl(var(--muted-foreground))" }} interval={2} />
-                <YAxis tick={{ fontSize: 9, fill: "hsl(var(--muted-foreground))" }} />
+              <BarChart data={hourlyPattern} barCategoryGap="15%">
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="hour" tick={{ fontSize: 7, fill: "hsl(215, 12%, 50%)" }} interval={2} />
+                <YAxis tick={axisStyle} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="detections" radius={[2, 2, 0, 0]}>
+                <Bar dataKey="detections" radius={[3, 3, 0, 0]}>
                   {hourlyPattern.map((_, i) => (
-                    <Cell key={i} fill={i >= 22 || i <= 5 ? COLORS.purple : i >= 6 && i <= 9 ? COLORS.amber : COLORS.cyan} />
+                    <Cell
+                      key={i}
+                      fill={i >= 22 || i <= 5 ? PALETTE.accent : i >= 6 && i <= 9 ? PALETTE.warning : PALETTE.primary}
+                      fillOpacity={0.85}
+                    />
                   ))}
                 </Bar>
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
 
-          {/* Confidence Distribution */}
-          <div className="gradient-card border border-border rounded-lg p-5">
-            <h2 className="text-sm font-semibold mb-4">AI Confidence Distribution</h2>
+          <ChartCard title="AI Confidence Distribution" icon={TrendingUp}>
             <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={confBuckets}>
-                <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
-                <XAxis dataKey="range" tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
-                <YAxis tick={{ fontSize: 10, fill: "hsl(var(--muted-foreground))" }} />
+              <BarChart data={confBuckets} barCategoryGap="25%">
+                <defs>
+                  <linearGradient id="gradConf" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor={PALETTE.success} stopOpacity={0.9} />
+                    <stop offset="100%" stopColor={PALETTE.success} stopOpacity={0.5} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                <XAxis dataKey="range" tick={axisStyle} />
+                <YAxis tick={axisStyle} />
                 <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill={COLORS.green} radius={[4, 4, 0, 0]} />
+                <Bar dataKey="count" fill="url(#gradConf)" radius={[6, 6, 0, 0]} />
               </BarChart>
             </ResponsiveContainer>
-          </div>
+          </ChartCard>
         </div>
       </div>
     </DashboardLayout>

@@ -1,8 +1,10 @@
+import { useState, useCallback } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { Toaster } from "@/components/ui/toaster";
 import { TooltipProvider } from "@/components/ui/tooltip";
+import { SplashScreen } from "@/components/SplashScreen";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import LiveMonitor from "./pages/LiveMonitor";
@@ -20,31 +22,44 @@ import { ProtectedRoute } from "./components/ProtectedRoute";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <Routes>
-          <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          <Route path="/auth" element={<Auth />} />
-          <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
-          <Route path="/live-monitor" element={<ProtectedRoute><LiveMonitor /></ProtectedRoute>} />
-          <Route path="/cameras" element={<ProtectedRoute><Cameras /></ProtectedRoute>} />
-          <Route path="/floorplan" element={<ProtectedRoute><FloorplanView /></ProtectedRoute>} />
-          <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
-          <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
-          <Route path="/forensic-search" element={<ProtectedRoute><ForensicSearch /></ProtectedRoute>} />
-          <Route path="/ai-models" element={<ProtectedRoute><AIModels /></ProtectedRoute>} />
-          <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
-          <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
-          <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
-          <Route path="*" element={<NotFound />} />
-        </Routes>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  const [showSplash, setShowSplash] = useState(() => {
+    const shown = sessionStorage.getItem("sentinel-splash-shown");
+    return !shown;
+  });
+
+  const handleSplashComplete = useCallback(() => {
+    sessionStorage.setItem("sentinel-splash-shown", "1");
+    setShowSplash(false);
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        {showSplash && <SplashScreen onComplete={handleSplashComplete} />}
+        <BrowserRouter>
+          <Routes>
+            <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            <Route path="/auth" element={<Auth />} />
+            <Route path="/dashboard" element={<ProtectedRoute><Dashboard /></ProtectedRoute>} />
+            <Route path="/live-monitor" element={<ProtectedRoute><LiveMonitor /></ProtectedRoute>} />
+            <Route path="/cameras" element={<ProtectedRoute><Cameras /></ProtectedRoute>} />
+            <Route path="/floorplan" element={<ProtectedRoute><FloorplanView /></ProtectedRoute>} />
+            <Route path="/alerts" element={<ProtectedRoute><Alerts /></ProtectedRoute>} />
+            <Route path="/analytics" element={<ProtectedRoute><Analytics /></ProtectedRoute>} />
+            <Route path="/forensic-search" element={<ProtectedRoute><ForensicSearch /></ProtectedRoute>} />
+            <Route path="/ai-models" element={<ProtectedRoute><AIModels /></ProtectedRoute>} />
+            <Route path="/users" element={<ProtectedRoute><UsersPage /></ProtectedRoute>} />
+            <Route path="/settings" element={<ProtectedRoute><SettingsPage /></ProtectedRoute>} />
+            <Route path="/system-health" element={<ProtectedRoute><SystemHealth /></ProtectedRoute>} />
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
