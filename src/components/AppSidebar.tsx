@@ -1,8 +1,9 @@
-import { LayoutDashboard, Camera, Bell, Users, Settings, Shield, LogOut, Monitor, BarChart3, Search, Brain, HeartPulse, Map } from "lucide-react";
+import { LayoutDashboard, Camera, Bell, Users, Settings, LogOut, Monitor, BarChart3, Search, Brain, HeartPulse, Map } from "lucide-react";
 import { NavLink } from "@/components/NavLink";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
+import { SentinelLogo } from "@/components/SentinelLogo";
 import {
   Sidebar,
   SidebarContent,
@@ -46,14 +47,12 @@ export function AppSidebar() {
       <SidebarContent>
         <SidebarGroup>
           <SidebarGroupLabel className="px-4 py-6">
-            <div className="flex items-center gap-2">
-              <Shield className="h-6 w-6 text-primary animate-pulse-glow" />
-              {!collapsed && (
-                <span className="text-lg font-bold tracking-tight text-foreground text-glow-cyan">
-                  SentinelCore
-                </span>
-              )}
-            </div>
+            <SentinelLogo
+              size={collapsed ? "sm" : "md"}
+              animate
+              showText={!collapsed}
+              variant={collapsed ? "icon" : "full"}
+            />
           </SidebarGroupLabel>
           <SidebarGroupContent>
             <SidebarMenu>
@@ -63,7 +62,7 @@ export function AppSidebar() {
                     <NavLink
                       to={item.url}
                       end={item.url === "/dashboard"}
-                      className="hover:bg-sentinel-surface-hover transition-colors relative"
+                      className="hover:bg-sentinel-surface-hover transition-all duration-200 relative group"
                       activeClassName="bg-sentinel-surface text-primary glow-cyan"
                     >
                       <item.icon className="mr-2 h-4 w-4" />
