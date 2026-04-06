@@ -117,26 +117,39 @@ function generateDemoAlerts() {
 type Period = "24h" | "7d" | "30d";
 
 /* ── KPI Card ── */
-function KPICard({ label, value, icon: Icon, iconColor, trend, trendUp, delay = 0 }: {
+function KPICard({ label, value, icon: Icon, iconColor, trend, trendUp, delay = 0, pulse = false }: {
   label: string; value: string | number; icon: any; iconColor: string;
-  trend: string; trendUp: boolean; delay?: number;
+  trend: string; trendUp: boolean; delay?: number; pulse?: boolean;
 }) {
   return (
     <div
-      className="glass-panel-strong rounded-xl p-5 animate-fade-in-up group hover:glow-cyan-strong transition-all duration-300"
+      className={`glass-panel-strong rounded-xl p-5 animate-fade-in-up group hover:glow-cyan-strong transition-all duration-300 relative overflow-hidden ${pulse ? "ring-1 ring-primary/40" : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="p-2 rounded-lg bg-muted/50">
+      {/* Pulse flash overlay */}
+      <div
+        className="absolute inset-0 bg-primary/5 pointer-events-none transition-opacity duration-500"
+        style={{ opacity: pulse ? 1 : 0 }}
+      />
+      <div className="flex items-center justify-between mb-3 relative z-10">
+        <div className={`p-2 rounded-lg bg-muted/50 transition-all duration-300 ${pulse ? "scale-110" : ""}`}>
           <Icon className={`h-4 w-4 ${iconColor}`} />
         </div>
-        <span className={`text-[10px] font-mono flex items-center gap-0.5 ${trendUp ? "text-sentinel-green" : "text-sentinel-red"}`}>
-          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {trend}
-        </span>
+        <div className="flex items-center gap-2">
+          {pulse && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+          )}
+          <span className={`text-[10px] font-mono flex items-center gap-0.5 ${trendUp ? "text-sentinel-green" : "text-sentinel-red"}`}>
+            {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {trend}
+          </span>
+        </div>
       </div>
-      <p className="text-3xl font-bold font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1 tracking-wider uppercase">{label}</p>
+      <p className={`text-3xl font-bold font-mono tracking-tight relative z-10 transition-all duration-300 ${pulse ? "text-glow-cyan" : ""}`}>{value}</p>
+      <p className="text-xs text-muted-foreground mt-1 tracking-wider uppercase relative z-10">{label}</p>
     </div>
   );
 }
