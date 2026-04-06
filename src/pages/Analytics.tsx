@@ -327,8 +327,8 @@ export default function Analytics() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard label="Total Detections" value={totalDetections} icon={Eye} iconColor="text-primary" trend="+12%" trendUp delay={0} />
-          <KPICard label="Total Alerts" value={totalAlerts} icon={AlertTriangle} iconColor="text-sentinel-amber" trend="-5%" trendUp={false} delay={0.05} />
+          <KPICard label="Total Detections" value={totalDetections} icon={Eye} iconColor="text-primary" trend="+12%" trendUp delay={0} pulse={liveDet.pulse} />
+          <KPICard label="Total Alerts" value={totalAlerts} icon={AlertTriangle} iconColor="text-sentinel-amber" trend="-5%" trendUp={false} delay={0.05} pulse={liveAlerts.pulse} />
           <KPICard label="Unacknowledged" value={unackAlerts} icon={Shield} iconColor="text-sentinel-red" trend="+3%" trendUp delay={0.1} />
           <KPICard label="Avg Confidence" value={`${avgConf}%`} icon={TrendingUp} iconColor="text-sentinel-green" trend="+1.2%" trendUp delay={0.15} />
         </div>
