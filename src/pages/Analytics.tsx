@@ -45,7 +45,7 @@ function useCountUp(target: number, duration = 1000) {
     let raf: number;
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - p, 3);
       setValue(Math.floor(eased * target));
       if (p < 1) raf = requestAnimationFrame(step);
     };
@@ -53,6 +53,24 @@ function useCountUp(target: number, duration = 1000) {
     return () => cancelAnimationFrame(raf);
   }, [target, duration]);
   return value;
+}
+
+/* Simulates real-time detection arrivals — increments counts periodically */
+function useLivePulse(baseValue: number, intervalMs = 4000) {
+  const [extra, setExtra] = useState(0);
+  const [pulse, setPulse] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (Math.random() > 0.35) {
+        const inc = Math.ceil(Math.random() * 3);
+        setExtra((e) => e + inc);
+        setPulse(true);
+        setTimeout(() => setPulse(false), 600);
+      }
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return { value: baseValue + extra, pulse };
 }
 
 function exportCSV(data: any[], filename: string) {
@@ -99,26 +117,39 @@ function generateDemoAlerts() {
 type Period = "24h" | "7d" | "30d";
 
 /* ── KPI Card ── */
-function KPICard({ label, value, icon: Icon, iconColor, trend, trendUp, delay = 0 }: {
+function KPICard({ label, value, icon: Icon, iconColor, trend, trendUp, delay = 0, pulse = false }: {
   label: string; value: string | number; icon: any; iconColor: string;
-  trend: string; trendUp: boolean; delay?: number;
+  trend: string; trendUp: boolean; delay?: number; pulse?: boolean;
 }) {
   return (
     <div
-      className="glass-panel-strong rounded-xl p-5 animate-fade-in-up group hover:glow-cyan-strong transition-all duration-300"
+      className={`glass-panel-strong rounded-xl p-5 animate-fade-in-up group hover:glow-cyan-strong transition-all duration-300 relative overflow-hidden ${pulse ? "ring-1 ring-primary/40" : ""}`}
       style={{ animationDelay: `${delay}s` }}
     >
-      <div className="flex items-center justify-between mb-3">
-        <div className="p-2 rounded-lg bg-muted/50">
+      {/* Pulse flash overlay */}
+      <div
+        className="absolute inset-0 bg-primary/5 pointer-events-none transition-opacity duration-500"
+        style={{ opacity: pulse ? 1 : 0 }}
+      />
+      <div className="flex items-center justify-between mb-3 relative z-10">
+        <div className={`p-2 rounded-lg bg-muted/50 transition-all duration-300 ${pulse ? "scale-110" : ""}`}>
           <Icon className={`h-4 w-4 ${iconColor}`} />
         </div>
-        <span className={`text-[10px] font-mono flex items-center gap-0.5 ${trendUp ? "text-sentinel-green" : "text-sentinel-red"}`}>
-          {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
-          {trend}
-        </span>
+        <div className="flex items-center gap-2">
+          {pulse && (
+            <span className="relative flex h-2 w-2">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-primary opacity-75" />
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-primary" />
+            </span>
+          )}
+          <span className={`text-[10px] font-mono flex items-center gap-0.5 ${trendUp ? "text-sentinel-green" : "text-sentinel-red"}`}>
+            {trendUp ? <ArrowUpRight className="h-3 w-3" /> : <ArrowDownRight className="h-3 w-3" />}
+            {trend}
+          </span>
+        </div>
       </div>
-      <p className="text-3xl font-bold font-mono tracking-tight">{value}</p>
-      <p className="text-xs text-muted-foreground mt-1 tracking-wider uppercase">{label}</p>
+      <p className={`text-3xl font-bold font-mono tracking-tight relative z-10 transition-all duration-300 ${pulse ? "text-glow-cyan" : ""}`}>{value}</p>
+      <p className="text-xs text-muted-foreground mt-1 tracking-wider uppercase relative z-10">{label}</p>
     </div>
   );
 }
@@ -172,8 +203,11 @@ export default function Analytics() {
   const filteredDet = detections.filter((d) => new Date(d.created_at).getTime() > cutoff);
   const filteredAlerts = alerts.filter((a) => new Date(a.created_at).getTime() > cutoff);
 
-  const totalDetections = useCountUp(filteredDet.length);
-  const totalAlerts = useCountUp(filteredAlerts.length);
+  const liveDet = useLivePulse(filteredDet.length, 3500);
+  const liveAlerts = useLivePulse(filteredAlerts.length, 6000);
+
+  const totalDetections = useCountUp(liveDet.value);
+  const totalAlerts = useCountUp(liveAlerts.value);
   const unackAlerts = useCountUp(filteredAlerts.filter((a) => !a.acknowledged).length);
   const avgConf = filteredDet.length > 0
     ? ((filteredDet.reduce((s, d) => s + Number(d.confidence), 0) / filteredDet.length) * 100).toFixed(1)
@@ -293,8 +327,8 @@ export default function Analytics() {
 
         {/* KPI Cards */}
         <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-          <KPICard label="Total Detections" value={totalDetections} icon={Eye} iconColor="text-primary" trend="+12%" trendUp delay={0} />
-          <KPICard label="Total Alerts" value={totalAlerts} icon={AlertTriangle} iconColor="text-sentinel-amber" trend="-5%" trendUp={false} delay={0.05} />
+          <KPICard label="Total Detections" value={totalDetections} icon={Eye} iconColor="text-primary" trend="+12%" trendUp delay={0} pulse={liveDet.pulse} />
+          <KPICard label="Total Alerts" value={totalAlerts} icon={AlertTriangle} iconColor="text-sentinel-amber" trend="-5%" trendUp={false} delay={0.05} pulse={liveAlerts.pulse} />
           <KPICard label="Unacknowledged" value={unackAlerts} icon={Shield} iconColor="text-sentinel-red" trend="+3%" trendUp delay={0.1} />
           <KPICard label="Avg Confidence" value={`${avgConf}%`} icon={TrendingUp} iconColor="text-sentinel-green" trend="+1.2%" trendUp delay={0.15} />
         </div>
