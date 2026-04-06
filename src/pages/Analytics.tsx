@@ -45,7 +45,7 @@ function useCountUp(target: number, duration = 1000) {
     let raf: number;
     const step = (now: number) => {
       const p = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - p, 3); // ease-out cubic
+      const eased = 1 - Math.pow(1 - p, 3);
       setValue(Math.floor(eased * target));
       if (p < 1) raf = requestAnimationFrame(step);
     };
@@ -53,6 +53,24 @@ function useCountUp(target: number, duration = 1000) {
     return () => cancelAnimationFrame(raf);
   }, [target, duration]);
   return value;
+}
+
+/* Simulates real-time detection arrivals — increments counts periodically */
+function useLivePulse(baseValue: number, intervalMs = 4000) {
+  const [extra, setExtra] = useState(0);
+  const [pulse, setPulse] = useState(false);
+  useEffect(() => {
+    const id = setInterval(() => {
+      if (Math.random() > 0.35) {
+        const inc = Math.ceil(Math.random() * 3);
+        setExtra((e) => e + inc);
+        setPulse(true);
+        setTimeout(() => setPulse(false), 600);
+      }
+    }, intervalMs);
+    return () => clearInterval(id);
+  }, [intervalMs]);
+  return { value: baseValue + extra, pulse };
 }
 
 function exportCSV(data: any[], filename: string) {
