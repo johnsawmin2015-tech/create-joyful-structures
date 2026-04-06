@@ -325,25 +325,55 @@ export default function Analytics() {
             </ResponsiveContainer>
           </ChartCard>
 
-          <ChartCard title="Object Distribution" icon={Eye}>
-            <ResponsiveContainer width="100%" height={260}>
-              <PieChart>
-                <Pie
-                  data={pieData}
-                  cx="50%"
-                  cy="50%"
-                  outerRadius={90}
-                  innerRadius={55}
-                  dataKey="value"
-                  paddingAngle={3}
-                  strokeWidth={0}
-                >
-                  {pieData.map((_, i) => <Cell key={i} fill={pieColors[i % pieColors.length]} />)}
-                </Pie>
-                <Tooltip contentStyle={tooltipStyle} />
-                <Legend wrapperStyle={{ fontSize: 10 }} />
-              </PieChart>
-            </ResponsiveContainer>
+          <ChartCard title="Object Distribution" icon={Eye} onExport={() => exportCSV(pieData, "object-distribution")}>
+            <div className="flex flex-col sm:flex-row items-center gap-4">
+              <div className="w-full sm:w-1/2">
+                <ResponsiveContainer width="100%" height={240}>
+                  <PieChart>
+                    <defs>
+                      {pieColors.map((c, i) => (
+                        <linearGradient key={i} id={`pieGrad${i}`} x1="0" y1="0" x2="1" y2="1">
+                          <stop offset="0%" stopColor={c} stopOpacity={1} />
+                          <stop offset="100%" stopColor={c} stopOpacity={0.6} />
+                        </linearGradient>
+                      ))}
+                      <filter id="pieShadow">
+                        <feDropShadow dx="0" dy="2" stdDeviation="4" floodColor="hsl(0,0%,0%)" floodOpacity="0.4" />
+                      </filter>
+                    </defs>
+                    <Pie
+                      data={pieData}
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={95}
+                      innerRadius={58}
+                      dataKey="value"
+                      paddingAngle={4}
+                      strokeWidth={0}
+                      cornerRadius={4}
+                      filter="url(#pieShadow)"
+                    >
+                      {pieData.map((_, i) => <Cell key={i} fill={`url(#pieGrad${i})`} />)}
+                    </Pie>
+                    <Tooltip contentStyle={tooltipStyle} />
+                  </PieChart>
+                </ResponsiveContainer>
+              </div>
+              <div className="w-full sm:w-1/2 space-y-2">
+                {pieData.map((item, i) => {
+                  const total = pieData.reduce((s, d) => s + d.value, 0) || 1;
+                  const pct = ((item.value / total) * 100).toFixed(1);
+                  return (
+                    <div key={item.name} className="flex items-center gap-3 group">
+                      <div className="w-2.5 h-2.5 rounded-sm shrink-0" style={{ background: pieColors[i % pieColors.length] }} />
+                      <span className="text-xs text-muted-foreground flex-1 capitalize">{item.name.replace("_", " ")}</span>
+                      <span className="text-xs font-mono font-semibold">{item.value}</span>
+                      <span className="text-[10px] font-mono text-muted-foreground w-12 text-right">{pct}%</span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </ChartCard>
         </div>
 
@@ -365,46 +395,92 @@ export default function Analytics() {
           </ChartCard>
 
           <ChartCard title="Alerts by Severity" icon={AlertTriangle} onExport={() => exportCSV(severityData, "severity")}>
-            <ResponsiveContainer width="100%" height={280}>
-              <BarChart data={severityData} barCategoryGap="20%">
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-                <XAxis dataKey="severity" tick={axisStyle} />
-                <YAxis tick={axisStyle} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" radius={[6, 6, 0, 0]}>
-                  {severityData.map((e) => <Cell key={e.severity} fill={severityColors[e.severity]} />)}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-4">
+              <ResponsiveContainer width="100%" height={200}>
+                <BarChart data={severityData} barCategoryGap="30%">
+                  <defs>
+                    {Object.entries(severityColors).map(([key, color]) => (
+                      <linearGradient key={key} id={`sevGrad-${key}`} x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="0%" stopColor={color} stopOpacity={1} />
+                        <stop offset="100%" stopColor={color} stopOpacity={0.4} />
+                      </linearGradient>
+                    ))}
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                  <XAxis dataKey="severity" tick={axisStyle} />
+                  <YAxis tick={axisStyle} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="count" radius={[8, 8, 0, 0]}>
+                    {severityData.map((e) => <Cell key={e.severity} fill={`url(#sevGrad-${e.severity})`} />)}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Inline severity breakdown */}
+              <div className="grid grid-cols-4 gap-2">
+                {severityData.map((s) => {
+                  const total = severityData.reduce((sum, x) => sum + x.count, 0) || 1;
+                  return (
+                    <div key={s.severity} className="rounded-lg bg-muted/20 p-2.5 text-center border border-border/30 hover:border-border/60 transition-colors">
+                      <div className="w-2 h-2 rounded-full mx-auto mb-1.5" style={{ background: severityColors[s.severity], boxShadow: `0 0 8px ${severityColors[s.severity]}60` }} />
+                      <p className="text-lg font-bold font-mono">{s.count}</p>
+                      <p className="text-[9px] uppercase tracking-wider text-muted-foreground capitalize">{s.severity}</p>
+                      <p className="text-[9px] font-mono text-muted-foreground/60">{((s.count / total) * 100).toFixed(0)}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </ChartCard>
         </div>
 
         {/* Charts Row 3 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartCard title="Alert Lifecycle Funnel" icon={Shield}>
-            <div className="space-y-3 py-2">
+            <div className="space-y-2.5 py-2">
               {funnelData.map((stage, i) => {
                 const maxVal = funnelData[0].value || 1;
-                const width = (stage.value / maxVal) * 100;
+                const pct = (stage.value / maxVal) * 100;
+                const prevPct = i > 0 ? ((funnelData[i].value / (funnelData[i - 1].value || 1)) * 100).toFixed(0) : "100";
                 return (
-                  <div key={stage.name} className="flex items-center gap-3 group">
-                    <span className="text-xs text-muted-foreground w-28 text-right font-medium">{stage.name}</span>
-                    <div className="flex-1 h-9 rounded-lg overflow-hidden bg-muted/20 relative">
+                  <div key={stage.name} className="group">
+                    <div className="flex items-center justify-between mb-1">
+                      <div className="flex items-center gap-2">
+                        <div className="w-1.5 h-1.5 rounded-full" style={{ background: stage.color, boxShadow: `0 0 6px ${stage.color}50` }} />
+                        <span className="text-xs font-medium">{stage.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-sm font-bold font-mono">{stage.value}</span>
+                        {i > 0 && (
+                          <span className="text-[9px] font-mono px-1.5 py-0.5 rounded bg-muted/30 text-muted-foreground">
+                            {prevPct}% pass
+                          </span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="h-7 rounded-lg overflow-hidden bg-muted/15 relative">
                       <div
-                        className="h-full rounded-lg transition-all duration-1000 ease-out flex items-center px-3 relative overflow-hidden"
+                        className="h-full rounded-lg transition-all duration-[1500ms] ease-out relative overflow-hidden"
                         style={{
-                          width: `${Math.max(width, 4)}%`,
-                          background: `linear-gradient(90deg, ${stage.color}, ${stage.color}cc)`,
+                          width: `${Math.max(pct, 3)}%`,
+                          background: `linear-gradient(90deg, ${stage.color}ee, ${stage.color}88)`,
+                          boxShadow: `inset 0 1px 0 hsl(0 0% 100% / 0.12), 0 2px 8px ${stage.color}30`,
                         }}
                       >
                         <div className="absolute inset-0 animate-shimmer" />
-                        <span className="text-xs font-bold font-mono text-primary-foreground relative z-10">{stage.value}</span>
+                        {/* Glow edge */}
+                        <div className="absolute right-0 top-0 bottom-0 w-4" style={{ background: `linear-gradient(90deg, transparent, ${stage.color}40)` }} />
                       </div>
                     </div>
-                    <span className="text-[10px] font-mono text-muted-foreground w-10">{Math.round(width)}%</span>
                   </div>
                 );
               })}
+              {/* Conversion summary */}
+              <div className="mt-3 pt-3 border-t border-border/30 flex items-center justify-between">
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">End-to-end conversion</span>
+                <span className="text-sm font-bold font-mono text-primary">
+                  {funnelData[0].value > 0 ? ((funnelData[funnelData.length - 1].value / funnelData[0].value) * 100).toFixed(1) : 0}%
+                </span>
+              </div>
             </div>
           </ChartCard>
 
@@ -427,41 +503,91 @@ export default function Analytics() {
         {/* Charts Row 4 */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
           <ChartCard title="Time-of-Day Pattern" icon={Clock} onExport={() => exportCSV(hourlyPattern, "hourly")}>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={hourlyPattern} barCategoryGap="15%">
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-                <XAxis dataKey="hour" tick={{ fontSize: 7, fill: "hsl(215, 12%, 50%)" }} interval={2} />
-                <YAxis tick={axisStyle} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="detections" radius={[3, 3, 0, 0]}>
-                  {hourlyPattern.map((_, i) => (
-                    <Cell
-                      key={i}
-                      fill={i >= 22 || i <= 5 ? PALETTE.accent : i >= 6 && i <= 9 ? PALETTE.warning : PALETTE.primary}
-                      fillOpacity={0.85}
-                    />
-                  ))}
-                </Bar>
-              </BarChart>
-            </ResponsiveContainer>
+            <div className="space-y-3">
+              <div className="flex items-center gap-3 text-[9px] font-mono text-muted-foreground">
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm" style={{ background: PALETTE.accent }} />Night (22-05)</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm" style={{ background: PALETTE.warning }} />Morning (06-09)</div>
+                <div className="flex items-center gap-1"><div className="w-2 h-2 rounded-sm" style={{ background: PALETTE.primary }} />Day (10-21)</div>
+              </div>
+              <ResponsiveContainer width="100%" height={220}>
+                <BarChart data={hourlyPattern} barCategoryGap="8%">
+                  <defs>
+                    <linearGradient id="gradNight" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={PALETTE.accent} stopOpacity={1} />
+                      <stop offset="100%" stopColor={PALETTE.accent} stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="gradMorn" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={PALETTE.warning} stopOpacity={1} />
+                      <stop offset="100%" stopColor={PALETTE.warning} stopOpacity={0.3} />
+                    </linearGradient>
+                    <linearGradient id="gradDay" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={PALETTE.primary} stopOpacity={1} />
+                      <stop offset="100%" stopColor={PALETTE.primary} stopOpacity={0.3} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                  <XAxis dataKey="hour" tick={{ fontSize: 7, fill: "hsl(215, 12%, 50%)" }} interval={2} />
+                  <YAxis tick={axisStyle} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Bar dataKey="detections" radius={[4, 4, 0, 0]}>
+                    {hourlyPattern.map((_, i) => (
+                      <Cell
+                        key={i}
+                        fill={i >= 22 || i <= 5 ? "url(#gradNight)" : i >= 6 && i <= 9 ? "url(#gradMorn)" : "url(#gradDay)"}
+                      />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+              {/* Peak hour indicator */}
+              {(() => {
+                const peak = hourlyPattern.reduce((a, b) => a.detections > b.detections ? a : b, hourlyPattern[0]);
+                return (
+                  <div className="flex items-center justify-between bg-muted/15 rounded-lg px-3 py-2 border border-border/20">
+                    <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Peak Activity</span>
+                    <span className="text-xs font-bold font-mono text-primary">{peak.hour} — {peak.detections} detections</span>
+                  </div>
+                );
+              })()}
+            </div>
           </ChartCard>
 
-          <ChartCard title="AI Confidence Distribution" icon={TrendingUp}>
-            <ResponsiveContainer width="100%" height={240}>
-              <BarChart data={confBuckets} barCategoryGap="25%">
-                <defs>
-                  <linearGradient id="gradConf" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor={PALETTE.success} stopOpacity={0.9} />
-                    <stop offset="100%" stopColor={PALETTE.success} stopOpacity={0.5} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
-                <XAxis dataKey="range" tick={axisStyle} />
-                <YAxis tick={axisStyle} />
-                <Tooltip contentStyle={tooltipStyle} />
-                <Bar dataKey="count" fill="url(#gradConf)" radius={[6, 6, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
+          <ChartCard title="AI Confidence Distribution" icon={TrendingUp} onExport={() => exportCSV(confBuckets.map(b => ({ range: b.range, count: b.count })), "confidence")}>
+            <div className="space-y-3">
+              <ResponsiveContainer width="100%" height={200}>
+                <AreaChart data={confBuckets}>
+                  <defs>
+                    <linearGradient id="gradConfArea" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="0%" stopColor={PALETTE.success} stopOpacity={0.35} />
+                      <stop offset="100%" stopColor={PALETTE.success} stopOpacity={0.02} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke={gridStroke} vertical={false} />
+                  <XAxis dataKey="range" tick={axisStyle} />
+                  <YAxis tick={axisStyle} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Area type="monotone" dataKey="count" stroke={PALETTE.success} strokeWidth={2.5} fill="url(#gradConfArea)" dot={{ r: 5, fill: PALETTE.success, stroke: "hsl(222, 22%, 8%)", strokeWidth: 2 }} activeDot={{ r: 7, stroke: PALETTE.success, strokeWidth: 2, fill: "hsl(222, 22%, 8%)" }} />
+                </AreaChart>
+              </ResponsiveContainer>
+              {/* Distribution breakdown cards */}
+              <div className="grid grid-cols-4 gap-2">
+                {confBuckets.map((b, i) => {
+                  const total = confBuckets.reduce((s, x) => s + x.count, 0) || 1;
+                  const pct = ((b.count / total) * 100).toFixed(0);
+                  const intensity = 0.3 + (i / (confBuckets.length - 1)) * 0.7;
+                  return (
+                    <div key={b.range} className="rounded-lg bg-muted/15 p-2 text-center border border-border/20 hover:border-primary/30 transition-all">
+                      <div className="w-full h-1 rounded-full mb-2 overflow-hidden bg-muted/20">
+                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: PALETTE.success, opacity: intensity }} />
+                      </div>
+                      <p className="text-sm font-bold font-mono">{b.count}</p>
+                      <p className="text-[9px] text-muted-foreground">{b.range}</p>
+                      <p className="text-[9px] font-mono text-primary/70">{pct}%</p>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
           </ChartCard>
         </div>
       </div>
