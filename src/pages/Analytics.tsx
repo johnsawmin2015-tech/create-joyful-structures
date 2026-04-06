@@ -203,8 +203,11 @@ export default function Analytics() {
   const filteredDet = detections.filter((d) => new Date(d.created_at).getTime() > cutoff);
   const filteredAlerts = alerts.filter((a) => new Date(a.created_at).getTime() > cutoff);
 
-  const totalDetections = useCountUp(filteredDet.length);
-  const totalAlerts = useCountUp(filteredAlerts.length);
+  const liveDet = useLivePulse(filteredDet.length, 3500);
+  const liveAlerts = useLivePulse(filteredAlerts.length, 6000);
+
+  const totalDetections = useCountUp(liveDet.value);
+  const totalAlerts = useCountUp(liveAlerts.value);
   const unackAlerts = useCountUp(filteredAlerts.filter((a) => !a.acknowledged).length);
   const avgConf = filteredDet.length > 0
     ? ((filteredDet.reduce((s, d) => s + Number(d.confidence), 0) / filteredDet.length) * 100).toFixed(1)
