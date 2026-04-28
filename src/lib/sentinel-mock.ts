@@ -110,3 +110,12 @@ export const MOCK_SYSTEM_HEALTH: SystemHealth = {
 };
 
 export const SEVERITY_ORDER: Record<Severity, number> = { critical: 0, high: 1, medium: 2, low: 3 };
+
+export const SEVERITIES: readonly Severity[] = ["critical", "high", "medium", "low"] as const;
+
+export const SEVERITY_LABEL_SHORT: Record<Severity, string> = {
+  critical: "CRIT",
+  high: "HIGH",
+  medium: "MED",
+  low: "LOW",
+};

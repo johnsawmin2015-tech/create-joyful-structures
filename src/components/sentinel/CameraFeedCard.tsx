@@ -1,31 +1,32 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { WifiOff, AlertTriangle, Activity, Maximize2 } from "lucide-react";
-import { Camera, CameraStatus, AIStatus } from "@/lib/sentinel-mock";
+import { WifiOff, AlertTriangle, Activity, Maximize2, Circle } from "lucide-react";
+import type { Camera, CameraStatus, AIStatus } from "@/lib/sentinel-mock";
 import { RiskScoreIndicator } from "./RiskScoreIndicator";
 
 interface BBox {
+  id: number;
   x: number; y: number; w: number; h: number;
   label: string; confidence: number; color: string;
 }
 
 const OBJECT_COLORS: Record<string, string> = {
-  person: "#00D4FF",
-  vehicle: "#FF6B00",
-  bag: "#A855F7",
-  weapon: "#EF4444",
+  person:  "hsl(var(--sentinel-cyan))",
+  vehicle: "hsl(var(--sentinel-amber))",
+  bag:     "hsl(280 70% 65%)",
+  weapon:  "hsl(var(--sentinel-red))",
 };
 
-const STATUS_BADGE: Record<CameraStatus, { label: string; cls: string; dot: string }> = {
-  live: { label: "LIVE", cls: "text-sentinel-green border-sentinel-green/40 bg-sentinel-green/10", dot: "bg-sentinel-green animate-pulse" },
-  degraded: { label: "DEGRADED", cls: "text-sentinel-amber border-sentinel-amber/40 bg-sentinel-amber/10", dot: "bg-sentinel-amber animate-flicker" },
-  offline: { label: "OFFLINE", cls: "text-muted-foreground border-border bg-muted/30", dot: "bg-muted-foreground" },
+const STATUS_RAIL: Record<CameraStatus, string> = {
+  live:     "bg-sentinel-green",
+  degraded: "bg-sentinel-amber",
+  offline:  "bg-muted-foreground/40",
 };
 
-const AI_BADGE: Record<AIStatus, string> = {
-  active: "AI",
-  fallback_motion: "MOTION",
-  raw_only: "RAW",
-  error: "AI ERR",
+const AI_BADGE: Record<AIStatus, { text: string; cls: string }> = {
+  active:           { text: "AI",      cls: "text-primary border-primary/40 bg-primary/5" },
+  fallback_motion:  { text: "MOTION",  cls: "text-sentinel-amber border-sentinel-amber/40 bg-sentinel-amber/5" },
+  raw_only:         { text: "RAW",     cls: "text-muted-foreground border-border bg-muted/30" },
+  error:            { text: "AI ERR",  cls: "text-sentinel-red border-sentinel-red/40 bg-sentinel-red/5" },
 };
 
 interface CameraFeedCardProps {
@@ -33,16 +34,22 @@ interface CameraFeedCardProps {
   selected?: boolean;
   onSelect?: (id: string) => void;
   onExpand?: (id: string) => void;
-  /** Last-seen timestamp for offline cameras */
   lastSeenIso?: string | null;
+  /** Stagger animation delay for grid entrance (ms). */
+  delay?: number;
 }
 
 /**
- * CameraFeedCard
- * Live feed + AI bounding-box overlay + status badge (live / degraded / offline)
- * Falls back to motion-only mode under degraded AI; renders last-seen + reconnect indicator when offline.
+ * CameraFeedCard — Premium HUD-style live feed card.
+ *
+ * • live: scanline + AI bbox overlay + REC indicator
+ * • degraded: motion-only fallback notice
+ * • offline: last-seen + reconnect attempt counter
+ *
+ * Accessibility: rendered as <button>, supports keyboard activation,
+ * AI overlay summarized in aria-label so screen readers see the detections.
  */
-export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenIso }: CameraFeedCardProps) {
+export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenIso, delay = 0 }: CameraFeedCardProps) {
   const [boxes, setBoxes] = useState<BBox[]>([]);
   const [reconnectAttempt, setReconnectAttempt] = useState(0);
   const animRef = useRef<number>();
@@ -51,27 +58,25 @@ export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenI
   const isDegraded = camera.status === "degraded";
   const isOffline = camera.status === "offline";
 
-  // Simulated AI inference loop (live only). In prod, frames flow via WebRTC and
-  // bounding boxes arrive over the per-camera WebSocket subscription.
+  // AI inference loop — replaces frames every 1.8-2.6s when live
   useEffect(() => {
-    if (!isLive) {
-      setBoxes([]);
-      return;
-    }
+    if (!isLive) { setBoxes([]); return; }
+    let id = 0;
     const tick = () => {
       const n = Math.floor(Math.random() * 3) + 1;
-      const objs = ["person", "person", "vehicle", "bag"];
+      const objs = ["person", "person", "vehicle", "bag"] as const;
       setBoxes(
         Array.from({ length: n }, () => {
           const obj = objs[Math.floor(Math.random() * objs.length)];
           return {
-            x: 8 + Math.random() * 60,
-            y: 12 + Math.random() * 50,
-            w: obj === "vehicle" ? 22 + Math.random() * 14 : 9 + Math.random() * 9,
-            h: obj === "vehicle" ? 14 + Math.random() * 8 : 20 + Math.random() * 12,
+            id: id++,
+            x: 6 + Math.random() * 62,
+            y: 12 + Math.random() * 48,
+            w: obj === "vehicle" ? 22 + Math.random() * 16 : 9 + Math.random() * 9,
+            h: obj === "vehicle" ? 14 + Math.random() * 10 : 20 + Math.random() * 14,
             label: obj,
             confidence: 0.62 + Math.random() * 0.36,
-            color: OBJECT_COLORS[obj] ?? "#00D4FF",
+            color: OBJECT_COLORS[obj] ?? OBJECT_COLORS.person,
           };
         })
       );
@@ -81,9 +86,9 @@ export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenI
     return () => { if (animRef.current) clearTimeout(animRef.current); };
   }, [isLive]);
 
-  // Reconnect indicator for offline cameras
+  // Reconnect attempt counter for offline cameras
   useEffect(() => {
-    if (!isOffline) return;
+    if (!isOffline) { setReconnectAttempt(0); return; }
     const i = setInterval(() => setReconnectAttempt((n) => n + 1), 5000);
     return () => clearInterval(i);
   }, [isOffline]);
@@ -98,48 +103,77 @@ export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenI
     return `${h}h ago`;
   }, [lastSeenIso]);
 
-  const status = STATUS_BADGE[camera.status];
+  // Accessibility: textual summary of AI detections
+  const detectionSummary = useMemo(() => {
+    if (!isLive || boxes.length === 0) return "no active detections";
+    const counts = boxes.reduce<Record<string, number>>((acc, b) => {
+      acc[b.label] = (acc[b.label] || 0) + 1;
+      return acc;
+    }, {});
+    return Object.entries(counts).map(([k, v]) => `${v} ${k}${v > 1 ? "s" : ""}`).join(", ");
+  }, [isLive, boxes]);
+
+  const ariaLabel = `${camera.label} ${camera.status} at ${camera.location}. Risk score ${camera.riskScore} of 100. ${detectionSummary}.`;
+
+  const ai = AI_BADGE[camera.aiStatus];
 
   return (
-    <div
+    <button
+      type="button"
       onClick={() => onSelect?.(camera.cameraId)}
-      className={`relative aspect-video rounded-lg border overflow-hidden group cursor-pointer transition-all bg-background ${
-        selected ? "border-primary glow-cyan" : "border-border hover:border-primary/40"
-      }`}
+      onKeyDown={(e) => {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          onSelect?.(camera.cameraId);
+        }
+      }}
+      aria-label={ariaLabel}
+      aria-pressed={selected}
+      style={{ animationDelay: `${delay}ms` }}
+      className={`group relative aspect-video rounded-md border overflow-hidden text-left bg-background animate-fade-in-up
+        transition-all duration-200 ease-out outline-none
+        ${selected
+          ? "border-primary/80 glow-cyan z-10"
+          : "border-border hover:border-primary/40 hover:-translate-y-px"
+        }`}
     >
-      {/* Feed background */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-card to-background">
+      {/* ─── Feed surface ─────────────────────────────────────────── */}
+      <div className="absolute inset-0 bg-[radial-gradient(ellipse_at_center,hsl(var(--card))_0%,hsl(var(--background))_100%)]">
         {isLive && (
           <>
-            <div className="absolute inset-0 overflow-hidden">
-              <div className="absolute w-full h-px bg-primary/20 animate-scan-line" />
-            </div>
-            <svg className="absolute inset-0 w-full h-full opacity-[0.07]">
+            {/* Subtle technical grid */}
+            <svg className="absolute inset-0 w-full h-full opacity-[0.05]" aria-hidden>
               {Array.from({ length: 6 }).map((_, i) => (
-                <line key={`h${i}`} x1="0" y1={`${(i + 1) * 16.6}%`} x2="100%" y2={`${(i + 1) * 16.6}%`} stroke="hsl(var(--primary))" strokeWidth="0.5" />
+                <line key={`h${i}`} x1="0" y1={`${(i + 1) * 16.6}%`} x2="100%" y2={`${(i + 1) * 16.6}%`} stroke="currentColor" strokeWidth="0.5" className="text-foreground" />
               ))}
               {Array.from({ length: 6 }).map((_, i) => (
-                <line key={`v${i}`} x1={`${(i + 1) * 16.6}%`} y1="0" x2={`${(i + 1) * 16.6}%`} y2="100%" stroke="hsl(var(--primary))" strokeWidth="0.5" />
+                <line key={`v${i}`} x1={`${(i + 1) * 16.6}%`} y1="0" x2={`${(i + 1) * 16.6}%`} y2="100%" stroke="currentColor" strokeWidth="0.5" className="text-foreground" />
               ))}
             </svg>
 
+            {/* Scan line — only on hover/select to reduce visual noise */}
+            <div className={`absolute inset-0 overflow-hidden transition-opacity duration-300 ${selected ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
+              <div className="absolute w-full h-px bg-primary/30 animate-scan-line" />
+            </div>
+
             {/* AI bounding boxes */}
-            {boxes.map((box, i) => (
+            {boxes.map((box) => (
               <div
-                key={i}
-                className="absolute border-2 transition-all duration-700 ease-out"
+                key={box.id}
+                className="absolute border transition-all duration-700 ease-out"
                 style={{
                   left: `${box.x}%`, top: `${box.y}%`,
                   width: `${box.w}%`, height: `${box.h}%`,
                   borderColor: box.color,
-                  boxShadow: `0 0 10px ${box.color}50`,
+                  boxShadow: `inset 0 0 0 1px ${box.color}30, 0 0 12px ${box.color}40`,
                 }}
+                aria-hidden
               >
                 <span
-                  className="absolute -top-4 left-0 text-[8px] font-mono px-1 rounded leading-tight"
-                  style={{ backgroundColor: box.color, color: "#050A0F" }}
+                  className="absolute -top-[14px] left-0 text-[8px] font-mono px-1 rounded-sm leading-tight tracking-wider uppercase"
+                  style={{ backgroundColor: box.color, color: "hsl(var(--background))" }}
                 >
-                  {box.label} {(box.confidence * 100).toFixed(0)}%
+                  {box.label} · {(box.confidence * 100).toFixed(0)}
                 </span>
               </div>
             ))}
@@ -147,10 +181,11 @@ export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenI
         )}
 
         {isDegraded && (
-          <div className="absolute inset-0 flex items-center justify-center bg-sentinel-amber/5">
+          <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <AlertTriangle className="h-7 w-7 text-sentinel-amber mx-auto mb-1.5 animate-flicker" />
-              <p className="text-[10px] font-mono text-sentinel-amber uppercase tracking-wider">Degraded — {AI_BADGE[camera.aiStatus]} fallback</p>
+              <AlertTriangle className="h-7 w-7 text-sentinel-amber mx-auto mb-2 animate-flicker" />
+              <p className="text-hud-sm font-mono text-sentinel-amber uppercase tracking-[0.2em]">Degraded</p>
+              <p className="text-hud-xs font-mono text-muted-foreground mt-1">{ai.text} fallback</p>
             </div>
           </div>
         )}
@@ -158,50 +193,72 @@ export function CameraFeedCard({ camera, selected, onSelect, onExpand, lastSeenI
         {isOffline && (
           <div className="absolute inset-0 flex items-center justify-center">
             <div className="text-center">
-              <WifiOff className="h-7 w-7 text-muted-foreground mx-auto mb-1.5" />
-              <p className="text-[10px] font-mono text-muted-foreground">Last seen {lastSeen}</p>
-              <p className="text-[9px] font-mono text-sentinel-amber mt-1">
-                <Activity className="inline h-2.5 w-2.5 mr-0.5 animate-pulse" />
-                Reconnect attempt #{reconnectAttempt + 1}
+              <WifiOff className="h-7 w-7 text-muted-foreground/60 mx-auto mb-2" />
+              <p className="text-hud-sm font-mono text-muted-foreground uppercase tracking-[0.2em]">Signal lost</p>
+              <p className="text-hud-xs font-mono text-muted-foreground/80 mt-1">last seen {lastSeen}</p>
+              <p className="text-hud-xs font-mono text-sentinel-amber mt-2 inline-flex items-center gap-1">
+                <Activity className="h-2.5 w-2.5 animate-pulse" />
+                reconnect #{reconnectAttempt + 1}
               </p>
             </div>
           </div>
         )}
+
+        {/* Vignette */}
+        <div className="absolute inset-0 bg-gradient-to-t from-background/40 via-transparent to-background/20 pointer-events-none" aria-hidden />
       </div>
 
-      {/* Top HUD */}
-      <div className="absolute top-1.5 left-2 right-2 flex items-start justify-between pointer-events-none z-10">
+      {/* ─── Corner brackets (selected/hover) ─────────────────────── */}
+      <div className={`absolute inset-0 pointer-events-none transition-opacity duration-200 ${
+        selected ? "opacity-100 text-primary" : "opacity-0 group-hover:opacity-50 text-foreground"
+      }`} aria-hidden>
+        <span className="absolute top-1 left-1 h-2 w-2 border-t border-l border-current" />
+        <span className="absolute top-1 right-1 h-2 w-2 border-t border-r border-current" />
+        <span className="absolute bottom-1 left-1 h-2 w-2 border-b border-l border-current" />
+        <span className="absolute bottom-1 right-1 h-2 w-2 border-b border-r border-current" />
+      </div>
+
+      {/* ─── Top HUD ──────────────────────────────────────────────── */}
+      <div className="absolute top-2 left-2 right-2 flex items-start justify-between pointer-events-none z-10 gap-2">
         <div className="flex items-center gap-1.5 min-w-0">
-          <div className={`h-2 w-2 rounded-full ${status.dot}`} />
-          <span className="text-[10px] font-mono text-foreground/90 truncate">{camera.label}</span>
-          <span className={`text-[8px] font-mono px-1 rounded border ${status.cls}`}>{status.label}</span>
+          {/* Status rail */}
+          <span className={`h-3 w-0.5 rounded-full ${STATUS_RAIL[camera.status]}`} aria-hidden />
+          {/* REC dot for live */}
+          {isLive && (
+            <span className="inline-flex items-center gap-1 rounded-sm bg-background/70 backdrop-blur-sm border border-border px-1 py-px">
+              <Circle className="h-1.5 w-1.5 fill-sentinel-red text-sentinel-red animate-rec" />
+              <span className="text-hud-xs font-mono text-foreground">REC</span>
+            </span>
+          )}
+          <span className="text-hud-sm font-mono font-medium text-foreground truncate">{camera.label}</span>
         </div>
-        <div className="flex items-center gap-1">
-          <span className="text-[8px] font-mono px-1 rounded bg-background/70 border border-border text-primary">
-            {AI_BADGE[camera.aiStatus]}
-          </span>
-        </div>
+        <span className={`text-hud-xs font-mono px-1.5 py-px rounded-sm border ${ai.cls} backdrop-blur-sm shrink-0`}>
+          {ai.text}
+        </span>
       </div>
 
-      {/* Bottom info */}
-      <div className="absolute bottom-1.5 left-2 right-2 flex items-end justify-between gap-2 z-10 pointer-events-none">
-        <div className="min-w-0">
-          <p className="text-[9px] font-mono text-muted-foreground truncate">{camera.location}</p>
-          <p className="text-[8px] font-mono text-muted-foreground/70 truncate">{camera.cameraId}</p>
+      {/* ─── Bottom HUD ──────────────────────────────────────────── */}
+      <div className="absolute bottom-2 left-2 right-2 flex items-end justify-between gap-2 z-10 pointer-events-none">
+        <div className="min-w-0 space-y-0.5">
+          <p className="text-hud-xs font-mono text-foreground/85 truncate">{camera.location}</p>
+          <p className="text-[8px] font-mono text-muted-foreground/70 truncate tracking-wider">{camera.cameraId}</p>
         </div>
-        <RiskScoreIndicator score={camera.riskScore} compact />
+        {!isOffline && <RiskScoreIndicator score={camera.riskScore} compact />}
       </div>
 
-      {/* Expand control */}
+      {/* ─── Expand control ──────────────────────────────────────── */}
       {onExpand && (
-        <button
+        <span
+          role="button"
+          tabIndex={-1}
           onClick={(e) => { e.stopPropagation(); onExpand(camera.cameraId); }}
-          aria-label="Expand camera"
-          className="absolute top-1.5 right-2 opacity-0 group-hover:opacity-100 transition-opacity z-20 h-5 w-5 rounded bg-background/70 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-primary/20"
+          aria-label={`Open ${camera.label} detail panel`}
+          className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-all z-20 h-6 w-6 rounded-sm bg-background/80 backdrop-blur-sm border border-border flex items-center justify-center hover:bg-primary/15 hover:border-primary/40 hover:text-primary translate-y-7 group-hover:translate-y-0"
+          style={{ transitionDelay: "60ms" }}
         >
-          <Maximize2 className="h-2.5 w-2.5" />
-        </button>
+          <Maximize2 className="h-3 w-3" />
+        </span>
       )}
-    </div>
+    </button>
   );
 }
