@@ -1,206 +1,216 @@
-<!--
-  Modern README for Create Joyful Structures
-  Updated: 2026-04-24
--->
+# SENTINEL
 
-```markdown
-# Create Joyful Structures • v1.0.0
+A React and TypeScript security-operations dashboard prototype for exploring camera monitoring, alert triage, detection analytics, and Supabase-backed operational workflows.
 
-[![Status](https://img.shields.io/badge/status-active-brightgreen.svg)](https://github.com/johnsawmin2015-tech/create-joyful-structures)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
-[![Built with Vite](https://img.shields.io/badge/built%20with-Vite-blue.svg)](https://vitejs.dev)
-[![React](https://img.shields.io/badge/react-18.x-%2361DAFB.svg)](https://react.dev)
-[![TypeScript](https://img.shields.io/badge/typescript-5.x-blue.svg)](https://www.typescriptlang.org)
+[![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react&logoColor=white)](https://react.dev/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?logo=vite&logoColor=white)](https://vite.dev/)
+[![Supabase](https://img.shields.io/badge/Supabase-2.x-3FCF8E?logo=supabase&logoColor=white)](https://supabase.com/)
 
-A modern starter kit and design system for building delightful web apps. Fast development with Vite + React, type-safe code with TypeScript, and expressive UI using TailwindCSS + Radix + shadcn patterns.
+> [!IMPORTANT]
+> SENTINEL is currently a frontend-focused MVP and demonstration environment. Authentication and selected records are backed by Supabase, while video feeds, detection overlays, infrastructure telemetry, model deployments, and several dashboard metrics are simulated or static. This repository does not contain a camera-ingestion pipeline or a production ML inference backend.
 
----
+## Overview
 
-Table of Contents
-- [Why this project](#why-this-project)
-- [Quick start](#quick-start)
-- [Features](#features)
-- [Project layout](#project-layout)
-- [Environment variables](#environment-variables)
-- [Development workflow](#development-workflow)
-- [Upgrading dependencies](#upgrading-dependencies)
-- [Testing & CI](#testing--ci)
-- [Deployment](#deployment)
-- [Contributing](#contributing)
-- [Roadmap & changelog](#roadmap--changelog)
-- [License](#license)
+SENTINEL presents a security operations center interface with protected routes, camera and incident management, interactive monitoring views, analytics, forensic filtering, and a visual floorplan. The application combines live Supabase queries with purpose-built mock data so the interface remains demonstrable without a complete surveillance backend.
 
----
+## Features
 
-Why this project
-----------------
+- Email and password sign-up and sign-in through Supabase Auth
+- Protected application routes with persistent browser sessions
+- Command dashboard with camera cards, risk indicators, priority alerts, system-health summaries, and an event timeline
+- Camera management backed by Supabase, including creation, deletion, status filtering, and stream metadata
+- Live-monitor grid with search, status filters, multiple layouts, fullscreen views, simulated object boxes, motion trails, zones, night vision, snapshot feedback, and PTZ controls
+- Incident center with severity and acknowledgement filters, single or bulk acknowledgement, and Supabase Realtime refreshes
+- Analytics views for detections, alerts, severity, confidence, activity patterns, lifecycle stages, and camera correlation
+- CSV export for selected analytics datasets
+- Forensic detection filtering by object type, camera, and minimum confidence
+- Interactive floorplan with camera coverage, sensors, heatmap layers, and demonstration risk zones
+- Reference model catalog and system-health dashboards
+- Responsive sidebar navigation, light/dark themes, toasts, tooltips, and keyboard shortcuts
 
-Create Joyful Structures is a pragmatic starter focused on developer experience and composable UI:
-- Quick to scaffold and iterate with Vite and Tailwind.
-- Type-safety and clear boundaries using TypeScript and modular directories.
-- Accessible, reusable primitives via Radix and shadcn-style components.
-- Batteries included: testing (Vitest + Playwright), linting, and CI-friendly configs.
+## Implementation Status
 
-Quick start
------------
+| Area | Current data source |
+| --- | --- |
+| Authentication | Supabase Auth |
+| Camera inventory and management | Supabase `cameras` table |
+| Incident list and acknowledgement | Supabase `alerts` table |
+| Alert refresh | Supabase Realtime subscription |
+| Detection and forensic views | Supabase `detections` table |
+| User directory and roles | Supabase `profiles` and `user_roles` tables |
+| Command dashboard | Local mock data with simulated updates |
+| Live video and object overlays | Database camera metadata plus demonstration feeds and simulated detections |
+| Analytics | Supabase records when present; generated demonstration data when empty |
+| Floorplan, risk zones, and sensors | Static demonstration configuration |
+| AI model deployment and pipeline metrics | Static reference catalog |
+| Service, GPU, broker, and storage health | Static or simulated telemetry |
 
-Clone and install:
+## Tech Stack
+
+- React 18
+- TypeScript
+- Vite with the React SWC plugin
+- React Router
+- TanStack Query
+- Supabase Auth, PostgreSQL, Row Level Security, and Realtime
+- Tailwind CSS
+- Radix UI primitives and shadcn/ui-style components
+- Recharts
+- React Hook Form and Zod
+- Lucide React
+- Vitest, Testing Library, and ESLint
+
+## Getting Started
+
+### Prerequisites
+
+- Git
+- Node.js and npm
+- A Supabase project for authentication and database-backed features
+
+### Installation
 
 ```bash
 git clone https://github.com/johnsawmin2015-tech/create-joyful-structures.git
 cd create-joyful-structures
-# Install with Bun (recommended), npm or pnpm
-bun install
-# or
-npm install
-# or
-pnpm install
+npm ci
 ```
 
-Run the dev server:
+### Configure Supabase
+
+Create a `.env.local` file in the repository root:
+
+```dotenv
+VITE_SUPABASE_URL=https://your-project.supabase.co
+VITE_SUPABASE_PUBLISHABLE_KEY=your-publishable-key
+```
+
+Only these two variables are read by the current application source.
+
+Apply the schema in [`supabase/migrations`](supabase/migrations) to the target Supabase project before using database-backed screens. The migration creates:
+
+- `profiles`
+- `user_roles`
+- `cameras`
+- `alerts`
+- `detections`
+- `system_settings`
+
+It also enables Row Level Security, defines `admin`, `operator`, and `viewer` roles, creates new-user profile handling, and adds `alerts` to Supabase Realtime.
+
+> [!NOTE]
+> The checked-in `.env.example` currently names `VITE_SUPABASE_ANON_KEY`, but the application reads `VITE_SUPABASE_PUBLISHABLE_KEY`. Use the variable shown above unless the client implementation is changed.
+
+### Start Development
 
 ```bash
-# Bun
-bun run dev
-# npm
 npm run dev
-# pnpm
-pnpm dev
 ```
 
-Open http://localhost:5173
+The configured development server runs at [http://localhost:8080](http://localhost:8080).
 
-Production build:
+## Available Scripts
+
+| Command | Description |
+| --- | --- |
+| `npm run dev` | Start the Vite development server |
+| `npm run build` | Create a production build |
+| `npm run build:dev` | Build using Vite's development mode |
+| `npm run preview` | Preview the production build locally |
+| `npm run lint` | Run ESLint across the project |
+| `npm run test` | Run Vitest once |
+| `npm run test:watch` | Run Vitest in watch mode |
+
+## Project Structure
+
+```text
+.
+├── public/                         # Static assets
+├── src/
+│   ├── components/
+│   │   ├── sentinel/               # Domain-specific dashboard components
+│   │   └── ui/                     # Reusable UI primitives
+│   ├── hooks/                      # Authentication and UI hooks
+│   ├── integrations/supabase/      # Generated client and database types
+│   ├── lib/                        # Mock domain data and shared utilities
+│   ├── pages/                      # Routed application screens
+│   ├── test/                       # Vitest setup and tests
+│   ├── App.tsx                     # Providers and route definitions
+│   ├── index.css                   # Global theme and Tailwind styles
+│   └── main.tsx                    # Browser entry point
+├── supabase/                       # Supabase config, schema, and policies
+├── components.json                 # shadcn/ui configuration
+├── tailwind.config.ts              # Theme and design tokens
+├── vite.config.ts                  # Vite configuration
+└── vitest.config.ts                # Unit-test configuration
+```
+
+## Application Routes
+
+| Route | Purpose |
+| --- | --- |
+| `/auth` | Sign in or create an account |
+| `/dashboard` | Operational command dashboard |
+| `/live-monitor` | Multi-camera monitoring grid |
+| `/cameras` | Camera inventory and configuration |
+| `/floorplan` | Interactive building visualization |
+| `/alerts` | Incident triage and acknowledgement |
+| `/analytics` | Detection and alert analytics |
+| `/forensic-search` | Detection and related-alert filtering |
+| `/ai-models` | Reference AI model catalog |
+| `/system-health` | Demonstration infrastructure telemetry |
+| `/users` | Supabase profile and role directory |
+| `/settings` | Static platform status and roadmap targets |
+
+All operational routes are protected by Supabase session checks.
+
+## Quality Checks
+
+Before opening a pull request, run:
+
+```bash
+npm run lint
+npm run test
+npm run build
+```
+
+The current Vitest suite contains only a placeholder smoke test. Playwright configuration files are present, but end-to-end testing is not wired into `package.json`, and the referenced `lovable-agent-playwright-config` package is not declared as a dependency.
+
+## Deployment
+
+Build the static application with:
 
 ```bash
 npm run build
-npm run preview
 ```
 
-Features
---------
+Vite writes the deployable output to `dist/`.
 
-- Vite + React + TypeScript starter
-- TailwindCSS with animation utilities
-- Radix UI primitives + shadcn patterns
-- React Query for server state
-- Supabase helpers (preconfigured folder for integration)
-- Vitest unit tests + Playwright E2E fixtures
-- ESLint and opinionated linting config
-- Ready for deployment to Vercel, Netlify, or static hosts
+A hosting platform must provide:
 
-Project layout
---------------
+- `VITE_SUPABASE_URL`
+- `VITE_SUPABASE_PUBLISHABLE_KEY`
+- A single-page application fallback that rewrites unknown routes to `index.html`
 
-```
-.
-├─ public/                # Static assets
-├─ src/
-│  ├─ main.tsx            # App bootstrap
-│  ├─ App.tsx             # Root application component
-│  ├─ index.css / App.css # Tailwind + global styles
-│  ├─ components/         # Reusable UI components (shadcn style)
-│  ├─ hooks/              # Custom React hooks
-│  ├─ integrations/       # API & third-party integration code (e.g. supabase)
-│  ├─ lib/                # Utilities, helpers, types
-│  └─ pages/              # Route/page components
-├─ supabase/              # Supabase configuration (if used)
-├─ vite.config.ts
-├─ tailwind.config.ts
-├─ package.json
-└─ README.md
-```
+No provider-specific deployment or CI configuration is currently included in this repository.
 
-Environment variables
----------------------
+## Current Limitations
 
-Copy and populate `.env` from your environment or `.env.example` (if present):
+- No RTSP ingestion, FFmpeg processing, recording service, or playable camera stream is implemented.
+- No ML model runtime, inference service, model deployment workflow, or alert-generation pipeline is included.
+- Dashboard streams, bounding boxes, health values, risk indicators, notifications, and parts of analytics use mock or randomly generated data.
+- The model manager stores camera assignments only in component state.
+- The floorplan, sensors, heatmap, and breach zones are demonstration visualizations.
+- The displayed application role is currently hard-coded to `operator`; database roles are not yet connected to the navigation UI.
+- The forensic License Plate input only narrows results to `license_plate` detections; it does not match entered plate text against stored metadata.
+- The repository currently tracks a configured `.env` file. Before using the project as a template, move deployment-specific values to local or provider-managed environment settings, stop tracking that file, and rotate any credential not intended for public use.
+- Automated end-to-end coverage and CI gates are not currently available.
 
-```
-# example
-VITE_SUPABASE_URL=https://xyz.supabase.co
-VITE_SUPABASE_ANON_KEY=public-anon-key
-```
+## Contributing
 
-Note: Vite exposes variables prefixed with `VITE_` to the client.
+See [`CONTRIBUTING.md`](CONTRIBUTING.md) for the local setup, branch, commit, test, and pull-request guidelines.
 
-Development workflow
---------------------
+## License
 
-- Use feature branches with descriptive names: `feat/auth-signup`, `fix/navbar-a11y`.
-- Commit messages: Use conventional commits (`feat:`, `fix:`, `chore:`, `docs:`) to make changelogs and releases predictable.
-- Previews: Use `npm run build` + `npm run preview` to verify production output locally.
-
-Upgrading dependencies
-----------------------
-
-Keep dependencies fresh for security and performance:
-
-- Bun: `bun upgrade --latest`
-- npm: `npm outdated` and `npm update` (or use `npm install pkg@latest` for specific package)
-- pnpm: `pnpm up --latest`
-
-Consider running `npx npm-check-updates -u` to bump package.json ranges and then reinstall.
-
-Testing & CI
-------------
-
-- Unit tests: Vitest (`npm run test`) — fast, Vite-native.
-- End-to-end: Playwright (`@playwright/test`) for cross-browser E2E testing.
-
-Example GitHub Actions (suggestion):
-
-- Run lint, test, and build on PRs
-- Publish preview deployments on push to `main` or `deploy/*` branches
-
-Deployment
-----------
-
-Works out-of-the-box with static hosts such as Vercel or Netlify (set `build` command to `vite build`).
-
-- Vercel: Connect the repo, set framework to `vite`, and add any VITE_* env vars.
-- Netlify: Use `npm run build` as the build command and `dist` as the publish directory.
-
-Contributing
-------------
-
-Contributions are welcome. Suggested workflow:
-1. Fork the repo and create a feature branch.
-2. Follow the existing code style and lint rules.
-3. Add tests for new behavior.
-4. Open a pull request with a clear description and linked issue (if any).
-
-If you want a CONTRIBUTING.md or PR template, I can add one.
-
-Roadmap & changelog
--------------------
-
-Planned enhancements:
-- Component gallery / Storybook-style preview
-- CI previews & automated dependency updates via Dependabot
-- Docker / containerized dev environment
-
-Changelog: use tags + GitHub releases. Semantic versioning recommended (MAJOR.MINOR.PATCH).
-
-License
--------
-
-This repository is shipped as-is for learning and prototyping. Add a LICENSE file (MIT recommended) if you want to open-source it.
-
----
-
-Maintainers
------------
-
-- John Saw Min — https://github.com/johnsawmin2015-tech
-
----
-
-If you'd like I can:
-- add CI config for GitHub Actions,
-- add a CONTRIBUTING.md and PR templates,
-- add badges (test coverage, pipeline),
-- generate a sample `.env.example`, or
-- produce a one-page architecture diagram.
-
-```
+No license file is currently included. Until a license is added, reuse and redistribution are not granted automatically.
